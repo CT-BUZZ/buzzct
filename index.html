@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BuzzCT — plan your Connecticut adventure</title>
+<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT builds your Connecticut day trip or weekend, or the bee reveals a surprise adventure. 4,000+ places and 1,000+ live events.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F5EFDC; --paper:#E8DFC4; --forest:#1F4D3A; --forest2:#2C6B4F;
+  --ember:#C75B2B; --gold:#D9A441; --ink:#1E2A44; --ink60:#4A5572;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 3',system-ui,sans-serif;font-size:16px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+.disp{font-family:'Oswald',sans-serif;letter-spacing:.04em}
+header.site{padding:28px 0 10px;text-align:center}
+header.site h1{margin:0;font-family:'Oswald',sans-serif;font-weight:600;font-size:30px;letter-spacing:.08em;color:var(--forest)}
+header.site h1 .alt{color:var(--ember)}
+header.site p{margin:6px 0 0;color:var(--ink60);font-size:15px}
+.rule{height:4px;background:repeating-linear-gradient(90deg,var(--forest) 0 24px,var(--gold) 24px 32px,var(--ember) 32px 56px);border-radius:2px;margin:14px auto 0;max-width:280px}
+
+.panel{background:#FBF7EA;border:1.5px solid var(--paper);border-radius:14px;padding:16px;margin:18px 0}
+.frow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px}
+.field label{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.12em;color:var(--forest)}
+select,input[type=date]{appearance:none;background:#fff;border:1.5px solid var(--forest);border-radius:9px;padding:9px 10px;font:inherit;font-size:15px;color:var(--ink);width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;border:1.5px solid var(--forest);border-radius:999px;background:transparent;color:var(--forest);padding:8px 15px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--forest);color:var(--cream)}
+.modes{display:flex;gap:8px;margin:20px 0 6px}
+.mode{flex:1;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.1em;padding:12px 6px;border-radius:11px;border:2px solid var(--forest);background:transparent;color:var(--forest);cursor:pointer}
+.mode[aria-pressed=true]{background:var(--ember);border-color:var(--ember);color:var(--cream)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 4px}
+.btn{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;border:1.5px solid var(--forest);border-radius:9px;background:transparent;color:var(--forest);padding:9px 14px;cursor:pointer}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.note{font-size:13px;color:var(--ink60)}
+
+.dayhdr{font-family:'Oswald',sans-serif;font-size:17px;letter-spacing:.14em;color:var(--ember);margin:26px 0 2px}
+.card{background:#fff;border:1.5px solid var(--paper);border-radius:14px;overflow:hidden;margin:14px 0;display:grid;grid-template-columns:150px 1fr}
+.card .art{background:var(--paper);position:relative}
+.card .art svg{display:block;width:100%;height:100%;min-height:150px}
+.card .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .body{padding:13px 16px 14px;min-width:0}
+.slotlab{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.16em;color:var(--ember);margin:0 0 2px}
+.card h3{margin:0 0 4px;font-family:'Oswald',sans-serif;font-weight:600;font-size:19px;line-height:1.25;color:var(--ink)}
+.meta{font-size:13px;color:var(--ink60);margin:0 0 8px}
+.desc{font-size:14px;margin:0 0 10px;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.stamps{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.stamp{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.06em;color:var(--forest);border:1.5px dashed var(--forest);border-radius:999px;padding:4px 9px;white-space:nowrap}
+.acts{display:flex;gap:7px;flex-wrap:wrap}
+.acts .btn{padding:6px 11px;font-size:12px}
+.btn.locked{background:var(--forest);color:var(--cream)}
+a.srclink{color:var(--forest2);font-size:13px;align-self:center}
+.empty{background:#FBF7EA;border:1.5px dashed var(--ember);border-radius:14px;padding:18px;margin:14px 0;color:var(--ink60);font-size:14px}
+
+.scratchwrap{position:relative;max-width:430px;margin:18px auto}
+.scratchwrap .card{grid-template-columns:1fr;margin:0}
+.scratchwrap .card .art svg{min-height:190px}
+#foil{position:absolute;border-radius:14px;touch-action:none;cursor:none}
+.bee{position:absolute;width:44px;height:44px;pointer-events:none;z-index:5}
+.bee.idle{animation:bee-bob 1.6s ease-in-out infinite}
+@keyframes bee-bob{0%,100%{margin-top:0}50%{margin-top:-9px}}
+.surprisebar{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.tagline{font-size:13px;color:var(--ink60);text-align:center;margin:4px 0 0}
+
+footer.site{margin-top:40px;border-top:1.5px solid var(--paper);padding-top:16px;font-size:12.5px;color:var(--ink60)}
+footer.site a{color:var(--forest2)}
+@media (max-width:560px){
+  .card{grid-template-columns:1fr}
+  .card .art svg{min-height:120px;max-height:140px}
+}
+@media print{
+  .panel,.modes,.toolbar,.acts,footer.site .noprint,.surprisebar{display:none!important}
+  body{background:#fff}
+  .card{break-inside:avoid;border-color:#ccc}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <h1>BUZZ<span class="alt">CT</span></h1>
+  <p>4,000+ places. 1,000+ live events. One good day out, built for you.</p>
+  <div class="rule" role="presentation"></div>
+</header>
+
+<section class="panel" aria-label="Filters">
+  <div class="frow">
+    <div class="field"><label for="town">STARTING FROM</label>
+      <select id="town"></select></div>
+    <div class="field"><label for="drive">MAX DRIVE</label>
+      <select id="drive">
+        <option value="15">15 min</option>
+        <option value="30" selected>30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+      </select></div>
+    <div class="field"><label for="when">WHEN</label>
+      <select id="when">
+        <option value="today">Today</option>
+        <option value="weekend" selected>This weekend</option>
+        <option value="week">Next 7 days</option>
+        <option value="month">Next 30 days</option>
+      </select></div>
+  </div>
+  <div class="frow">
+    <div class="field"><label>WHO'S GOING</label>
+      <div class="chips" id="who" role="group">
+        <button class="chip" data-v="any" aria-pressed="true">EVERYONE</button>
+        <button class="chip" data-v="family" aria-pressed="false">FAMILY W/ KIDS</button>
+        <button class="chip" data-v="adults" aria-pressed="false">21+ CREW</button>
+      </div></div>
+    <div class="field"><label>BUDGET</label>
+      <div class="chips" id="cost" role="group">
+        <button class="chip" data-v="any" aria-pressed="true">ANY</button>
+        <button class="chip" data-v="free" aria-pressed="false">FREE STUFF ONLY</button>
+      </div></div>
+  </div>
+  <p class="note" id="whennote" style="margin:4px 0 0"></p>
+  <div class="modes" role="group" aria-label="Mode">
+    <button class="mode" data-m="day" aria-pressed="true">PLAN MY DAY</button>
+    <button class="mode" data-m="weekend" aria-pressed="false">PLAN A WEEKEND</button>
+    <button class="mode" data-m="surprise" aria-pressed="false">SURPRISE ME</button>
+  </div>
+</section>
+
+<section id="planner">
+  <div class="toolbar">
+    <button class="btn primary" id="build">BUILD MY ADVENTURE</button>
+    <button class="btn" id="shuffleAll" disabled>SHUFFLE UNLOCKED</button>
+    <button class="btn" id="share" disabled>COPY SHARE LINK</button>
+    <button class="btn" id="print" disabled>PRINT</button>
+    <span class="note" id="poolnote"></span>
+  </div>
+  <div id="plan"></div>
+</section>
+
+<section id="surprise" hidden>
+  <div class="toolbar" style="justify-content:center">
+    <span class="note">Drag the bee around the hive. It knows the way.</span>
+  </div>
+  <div class="scratchwrap" id="scratchwrap"></div>
+  <div class="surprisebar">
+    <button class="btn primary" id="draw">RELEASE THE BEE</button>
+    <button class="btn" id="revealNow" hidden>JUST REVEAL IT</button>
+  </div>
+  <p class="tagline" id="surpriseNote"></p>
+</section>
+
+<footer class="site">
+  <p><strong>BuzzCT</strong> · a <a href="https://connecticutbuzz.com" rel="noopener">Connecticut Buzz</a> project. Place &amp; event data sourced from <a href="https://ctvisit.com" rel="noopener">CTvisit.com</a> (CT Office of Tourism), refreshed nightly. Hours, prices, and conditions change — always check the venue link before you go. Outdoor activities at your own risk.</p>
+  <p class="noprint" id="datastamp"></p>
+</footer>
+</div>
+
+<script src="data/towns.js"></script>
+<script src="data/places.js"></script>
+<script src="data/events.js"></script>
+<script>
+"use strict";
+/* ====================== art: flat poster scenes per category ====================== */
+const PAL={cream:"#F5EFDC",paper:"#E8DFC4",forest:"#1F4D3A",forest2:"#2C6B4F",ember:"#C75B2B",gold:"#D9A441",ink:"#1E2A44"};
+function scene(inner){return `<svg viewBox="0 0 300 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><rect width="300" height="200" fill="${PAL.paper}"/>${inner}</svg>`}
+const sun=`<circle cx="225" cy="58" r="30" fill="${PAL.gold}"/>`;
+const ART={
+hike:scene(sun+`<path d="M0 140 80 64 160 140Z" fill="${PAL.forest}"/><path d="M105 140 210 44 300 140Z" fill="${PAL.forest2}"/><rect y="138" width="300" height="62" fill="${PAL.ember}"/><path d="M130 200c10-26 36-34 22-52h12c18 20-8 32 8 52z" fill="${PAL.cream}"/>`),
+beach:scene(sun+`<rect y="118" width="300" height="34" fill="${PAL.forest2}"/><rect y="150" width="300" height="50" fill="${PAL.gold}"/><path d="M88 152 120 92l6 4-26 56z" fill="${PAL.ember}"/><path d="M120 92c-30-22-58-8-62 14 26-14 44-12 62-14z" fill="${PAL.ember}"/><path d="M120 92c34-10 52 8 50 28-20-20-36-22-50-28z" fill="${PAL.ember}"/>`),
+water:scene(sun+`<path d="M0 110 70 60 150 110Z" fill="${PAL.forest}"/><rect y="108" width="300" height="92" fill="${PAL.forest2}"/><path d="M70 152l34-18h92l34 18c-26 12-134 12-160 0z" fill="${PAL.ember}"/><path d="M150 134V92m0 0 28 30" stroke="${PAL.cream}" stroke-width="6" fill="none"/>`),
+lighthouse:scene(sun+`<rect y="140" width="300" height="60" fill="${PAL.forest2}"/><path d="M128 140 138 52h24l10 88z" fill="${PAL.cream}"/><path d="M132 112h36m-38 16h40" stroke="${PAL.ember}" stroke-width="10"/><rect x="134" y="36" width="32" height="18" fill="${PAL.ink}"/><circle cx="150" cy="45" r="6" fill="${PAL.gold}"/>`),
+museum:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="60" y="86" width="180" height="64" fill="${PAL.cream}"/><path d="M48 86 150 38l102 48z" fill="${PAL.ember}"/><rect x="78" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="118" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="158" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="198" y="98" width="16" height="52" fill="${PAL.forest}"/>`+sun.replace('cy="58"','cy="40"')),
+brewery:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest}"/><rect x="100" y="62" width="74" height="92" rx="8" fill="${PAL.gold}"/><rect x="174" y="84" width="26" height="44" rx="12" fill="${PAL.gold}"/><rect x="100" y="62" width="74" height="22" rx="8" fill="${PAL.cream}"/><circle cx="118" cy="58" r="9" fill="${PAL.cream}"/><circle cx="142" cy="50" r="7" fill="${PAL.cream}"/><circle cx="160" cy="58" r="6" fill="${PAL.cream}"/>`),
+winery:scene(sun+`<path d="M0 150c40-26 90-26 130 0z" fill="${PAL.forest2}"/><path d="M120 150c50-30 120-30 180 0z" fill="${PAL.forest}"/><rect y="148" width="300" height="52" fill="${PAL.ember}"/><path d="M138 58c0 26 8 36 12 40v28h-14v8h40v-8h-14V98c4-4 12-14 12-40z" fill="${PAL.ink}" opacity=".85"/>`),
+farm:scene(sun+`<rect y="142" width="300" height="58" fill="${PAL.forest2}"/><rect x="74" y="92" width="110" height="50" fill="${PAL.ember}"/><path d="M66 92 129 56l63 36z" fill="${PAL.ink}"/><rect x="116" y="108" width="26" height="34" fill="${PAL.ink}"/><rect x="196" y="74" width="30" height="68" rx="4" fill="${PAL.cream}"/><circle cx="211" cy="74" r="15" fill="${PAL.cream}"/>`),
+garden:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><g stroke="${PAL.forest}" stroke-width="5"><path d="M80 150v-44m70 44v-58m70 58v-44"/></g><circle cx="80" cy="96" r="16" fill="${PAL.ember}"/><circle cx="150" cy="82" r="18" fill="${PAL.gold}"/><circle cx="220" cy="96" r="16" fill="${PAL.ember}"/>`),
+park:scene(sun+`<rect y="146" width="300" height="54" fill="${PAL.forest2}"/><rect x="142" y="96" width="14" height="52" fill="${PAL.ink}"/><circle cx="149" cy="74" r="40" fill="${PAL.forest}"/><rect x="210" y="120" width="56" height="8" fill="${PAL.ember}"/><path d="M214 128v20m48-20v20" stroke="${PAL.ember}" stroke-width="7"/>`),
+theater:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><path d="M0 0h60c0 70 20 110 50 130v70H0z" fill="${PAL.ember}"/><path d="M300 0h-60c0 70-20 110-50 130v70h110z" fill="${PAL.ember}"/><circle cx="150" cy="92" r="34" fill="${PAL.gold}"/><path d="M150 70l7 15 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z" fill="${PAL.ink}"/>`),
+family:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M118 150c-6-44 10-78 32-92 22 14 38 48 32 92z" fill="${PAL.ember}"/><path d="M150 58v92" stroke="${PAL.cream}" stroke-width="5"/><path d="M126 150c-2-34 8-62 24-78 16 16 26 44 24 78" fill="none" stroke="${PAL.cream}" stroke-width="4"/>`),
+cafe:scene(`<rect y="150" width="300" height="50" fill="${PAL.ember}"/><rect x="96" y="76" width="84" height="64" rx="10" fill="${PAL.cream}"/><path d="M180 88h18a16 16 0 0 1 0 32h-18" fill="none" stroke="${PAL.cream}" stroke-width="9"/><path d="M118 62c-6-10 6-12 2-22m22 22c-6-10 6-12 2-22" stroke="${PAL.forest2}" stroke-width="5" fill="none"/>`+sun.replace('r="30"','r="22"')),
+restaurant:scene(`<rect width="300" height="200" fill="${PAL.forest}"/><circle cx="150" cy="100" r="56" fill="${PAL.cream}"/><circle cx="150" cy="100" r="34" fill="${PAL.paper}"/><path d="M64 60v80m-12-80v28a12 12 0 0 0 24 0V60" stroke="${PAL.gold}" stroke-width="6" fill="none"/><path d="M242 60c-10 18-10 36 0 44v36" stroke="${PAL.gold}" stroke-width="6" fill="none"/>`),
+shopping:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="76" y="84" width="148" height="66" fill="${PAL.cream}"/><path d="M70 84h160l-10-26H80z" fill="${PAL.ember}"/><path d="M76 84c0 12 10 12 10 0s10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0" fill="${PAL.ember}"/><rect x="130" y="108" width="40" height="42" fill="${PAL.forest}"/>`),
+lodging:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><circle cx="226" cy="54" r="24" fill="${PAL.cream}"/><circle cx="234" cy="48" r="22" fill="${PAL.ink}"/><rect x="60" y="110" width="180" height="44" rx="8" fill="${PAL.cream}"/><rect x="60" y="92" width="60" height="26" rx="12" fill="${PAL.gold}"/><path d="M52 84v76m196-50v50" stroke="${PAL.cream}" stroke-width="7"/>`),
+"live-music":scene(`<rect width="300" height="200" fill="${PAL.forest}"/><circle cx="120" cy="124" r="26" fill="${PAL.gold}"/><rect x="142" y="48" width="9" height="76" fill="${PAL.gold}"/><path d="M151 48c18 4 28 14 24 30-8-10-16-12-24-14z" fill="${PAL.gold}"/><circle cx="216" cy="110" r="16" fill="${PAL.cream}"/><rect x="229" y="56" width="6" height="54" fill="${PAL.cream}"/>`),
+festival:scene(sun+`<path d="M0 30 50 58 100 30 150 58 200 30 250 58 300 30" fill="none" stroke="${PAL.ember}" stroke-width="8"/><rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M90 150 150 84l60 66z" fill="${PAL.ember}"/><path d="M150 84v66" stroke="${PAL.cream}" stroke-width="5"/><path d="M120 150c8-18 52-18 60 0z" fill="${PAL.ink}"/>`),
+art:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="92" y="58" width="116" height="84" fill="${PAL.cream}"/><path d="M92 142 130 174m78-32-38 32m-20-32v40" stroke="${PAL.ink}" stroke-width="6"/><circle cx="128" cy="92" r="14" fill="${PAL.gold}"/><path d="M150 124c14-26 34-30 44-46" stroke="${PAL.ember}" stroke-width="8" fill="none"/>`),
+kids:scene(sun+`<rect y="152" width="300" height="48" fill="${PAL.forest2}"/><path d="M120 56 162 86l-30 42-42-30z" fill="${PAL.ember}"/><path d="M132 128c-8 22 8 34 0 52" stroke="${PAL.ember}" stroke-width="5" fill="none"/><path d="M120 56l42 30M90 98l72-12" stroke="${PAL.cream}" stroke-width="4"/>`),
+history:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="138" y="56" width="9" height="94" fill="${PAL.ink}"/><path d="M147 58h74l-14 16 14 16h-74z" fill="${PAL.ember}"/>`),
+"food-drink":scene(`<rect width="300" height="200" fill="${PAL.ember}"/><path d="M82 134a68 68 0 0 1 136 0z" fill="${PAL.cream}"/><rect x="64" y="134" width="172" height="12" rx="6" fill="${PAL.ink}"/><circle cx="150" cy="62" r="8" fill="${PAL.cream}"/>`),
+sports:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M96 64v86m0-86 96 16-96 22z" fill="${PAL.ember}"/><path d="M96 64v86" stroke="${PAL.ink}" stroke-width="7"/>`),
+market:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="80" y="96" width="140" height="54" fill="${PAL.cream}"/><path d="M72 96h156l-12-30H84z" fill="${PAL.forest}"/><path d="M80 96c0 11 9 11 9 0s9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0" fill="${PAL.gold}"/><circle cx="116" cy="124" r="9" fill="${PAL.ember}"/><circle cx="138" cy="124" r="9" fill="${PAL.gold}"/><circle cx="160" cy="124" r="9" fill="${PAL.ember}"/>`),
+holiday:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><path d="M150 36l10 22 24 3-17 17 4 24-21-11-21 11 4-24-17-17 24-3z" fill="${PAL.gold}"/><circle cx="80" cy="120" r="4" fill="${PAL.cream}"/><circle cx="220" cy="90" r="4" fill="${PAL.cream}"/><circle cx="190" cy="150" r="4" fill="${PAL.cream}"/><circle cx="110" cy="160" r="4" fill="${PAL.cream}"/>`),
+generic:scene(sun+`<path d="M0 132 90 84l80 48 70-36 60 36" fill="none" stroke="${PAL.forest}" stroke-width="10"/><rect y="148" width="300" height="52" fill="${PAL.forest2}"/><path d="M40 178h220" stroke="${PAL.cream}" stroke-width="5" stroke-dasharray="14 10"/>`)
+};
+const ART_ALIAS={outdoor:"hike",community:"festival",drink:"brewery",attraction:"generic",food:"restaurant",theaterEvt:"theater"};
+function artFor(cat){return ART[cat]||ART[ART_ALIAS[cat]]||ART.generic}
+/* Prefer a real illustration at data/img/{category}.webp when present;
+   the inline SVG sits underneath as automatic fallback (img removes itself on 404). */
+function artBlock(cat){
+  const c=ART[cat]?cat:(ART_ALIAS[cat]||"generic");
+  return artFor(c)+`<img src="data/img/${c}.webp" alt="" loading="lazy" onerror="this.remove()">`
+}
+
+/* ====================== data + helpers ====================== */
+const PLACES=window.CT_PLACES.items, EVENTS=window.CT_EVENTS.items, TOWNS=window.CT_TOWNS;
+const byId={}; PLACES.forEach(p=>byId[p.id]=p); EVENTS.forEach(e=>byId[e.id]=e);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function hav(a,b,c,d){const R=3959,t=x=>x*Math.PI/180,p=t(c-a),q=t(d-b),h=Math.sin(p/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(q/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function seasonOf(d){const m=d.getMonth();return m<2||m===11?"winter":m<5?"spring":m<8?"summer":"fall"}
+function fmtDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+(d.getHours()||d.getMinutes()?" · "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"")}
+function pick(arr,weighted){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=x.curated?(x.weight||3):1;tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
+
+/* ====================== filter state ====================== */
+const state={mode:"day",who:"any",cost:"any",slots:{},locked:new Set()};
+function dateWindow(){
+  const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());let end;
+  const v=$("#when").value;
+  if(v==="today"){end=new Date(+start+864e5)}
+  else if(v==="weekend"){const sat=new Date(+start+((6-start.getDay()+7)%7)*864e5);const s=start.getDay()===0?start:sat;return{start:s,end:new Date(+s+(start.getDay()===0?1:2)*864e5)}}
+  else if(v==="week"){end=new Date(+start+7*864e5)}
+  else{end=new Date(+start+30*864e5)}
+  return{start,end}
+}
+function origin(){const t=$("#town").value;return TOWNS[t]||[41.6,-72.7]}
+function radiusMiles(){return +$("#drive").value*0.7}
+function audienceOK(x){
+  if(state.who==="family")return x.audience.family||!x.audience.adults21;
+  if(state.who==="adults")return true;
+  return true
+}
+function audiencePrefer(x){
+  if(state.who==="family")return x.audience.family;
+  if(state.who==="adults")return x.audience.adults21;
+  return false
+}
+function costOK(x,slotType){
+  if(state.cost!=="free")return true;
+  if(slotType==="food")return true; /* meals are inherently paid */
+  return x.cost==="free"||x.cost==="unknown"&&x.type!=="event"
+}
+function inWindow(e,win){
+  const s=e.dates.start?new Date(e.dates.start):null,en=e.dates.end?new Date(e.dates.end):s;
+  return s&&s<win.end&&en>=win.start
+}
+function seasonsInWindow(win){
+  const s=new Set();
+  for(let t=+win.start;t<=+win.end;t+=864e5)s.add(seasonOf(new Date(t)));
+  return s
+}
+function basePools(){
+  const [olat,olng]=origin(),R=radiusMiles(),win=dateWindow(),winSeasons=seasonsInWindow(win);
+  const near=x=>x.lat&&hav(olat,olng,x.lat,x.lng)<=R;
+  const places=PLACES.filter(p=>near(p)&&p.seasons.some(s=>winSeasons.has(s))&&audienceOK(p)&&(state.who!=="family"||!(p.audience.adults21&&!p.audience.family)));
+  const events=EVENTS.filter(e=>near(e)&&inWindow(e,win)&&audienceOK(e));
+  return{places,events,win,season:seasonOf(win.start),olat,olng}
+}
+
+/* ====================== itinerary engine ====================== */
+const DAY_SLOTS=[
+  {id:"morning",label:"MORNING ANCHOR",want:["hike","attraction"],tod:"morning",anchor:true},
+  {id:"lunch",label:"LUNCH",want:["food"],near:12},
+  {id:"afternoon",label:"AFTERNOON",want:["attraction","hike","event"],tod:"afternoon",near:18},
+  {id:"evening",label:"DINNER & EVENING",want:["food","drink","event"],tod:"evening",near:18}
+];
+function slotsFor(mode){
+  if(mode==="day")return DAY_SLOTS.map(s=>({...s,key:"d1-"+s.id,day:"YOUR DAY"}));
+  const mk=d=>DAY_SLOTS.map(s=>({...s,key:`d${d}-`+s.id,day:d===1?"SATURDAY":"SUNDAY"}));
+  return[...mk(1),...mk(2),{id:"stay",key:"stay",label:"WHERE TO STAY",day:"OVERNIGHT",want:["lodging"],near:20}]
+}
+function candidates(slot,pools,anchor,exclude){
+  const {places,events}=pools;let out=[];
+  const want=new Set(slot.want);
+  if(want.has("event")) out=out.concat(events.filter(e=>e.timeOfDay.includes(slot.tod||"afternoon")&&costOK(e,"event")));
+  out=out.concat(places.filter(p=>want.has(p.type)&&costOK(p,p.type)&&(!slot.tod||p.timeOfDay.includes(slot.tod)||p.type==="food"||p.type==="drink")));
+  if(slot.id==="evening"){
+    out=out.filter(x=>x.type!=="drink"||state.who!=="family");
+    if(state.who==="adults"){const dr=out.filter(x=>x.type==="drink"||x.audience.adults21);if(dr.length>2)out=dr.concat(out.filter(x=>x.type==="food").slice(0,30))}
+  }
+  out=out.filter(x=>!exclude.has(x.id));
+  if(anchor&&slot.near){
+    for(const r of[slot.near*0.6,slot.near,slot.near*1.8]){
+      const tight=out.filter(x=>x.lat&&hav(anchor.lat,anchor.lng,x.lat,x.lng)<=r);
+      if(tight.length>=3)return tight
+    }
+  }
+  return out
+}
+function buildPlan(keepLocked){
+  const pools=basePools(),slots=slotsFor(state.mode),used=new Set();
+  const old=state.slots;state.slots={};
+  for(const slot of slots){
+    if(keepLocked&&state.locked.has(slot.key)&&old[slot.key]&&byId[old[slot.key]]){
+      state.slots[slot.key]=old[slot.key];used.add(old[slot.key]);continue
+    }
+  }
+  let anchor=null,day=null;
+  for(const slot of slots){
+    if(slot.day!==day){day=slot.day;anchor=null}
+    if(state.slots[slot.key]){const x=byId[state.slots[slot.key]];if(slot.anchor||!anchor)anchor=x&&x.lat?x:anchor;continue}
+    const cands=candidates(slot,pools,slot.anchor?null:anchor,used);
+    const preferred=cands.filter(audiencePrefer);
+    const chosen=pick(preferred.length>=3?preferred:cands,true);
+    if(chosen){state.slots[slot.key]=chosen.id;used.add(chosen.id);if((slot.anchor||!anchor)&&chosen.lat)anchor=chosen}
+  }
+  renderPlan(pools)
+}
+
+/* ====================== rendering ====================== */
+const STAMP_SEASON={winter:"❄ WINTER",spring:"❀ SPRING",summer:"☀ SUMMER",fall:"✦ FALL"};
+function stampRow(x,season){
+  const st=[];
+  /* show the item's true seasonality, not the current season */
+  if(x.type==="event"){}
+  else if(!x.seasons||x.seasons.length>=4)st.push('<span class="stamp">ALL YEAR</span>');
+  else st.push(`<span class="stamp">${x.seasons.map(s=>STAMP_SEASON[s]||s.toUpperCase()).join(" · ")}</span>`);
+  if(x.cost==="free")st.push('<span class="stamp">FREE</span>');
+  else if(x.cost==="paid")st.push('<span class="stamp">PAID</span>');
+  if(x.type==="event"&&x.dates.start)st.push(`<span class="stamp">${esc(fmtDate(x.dates.start))}</span>`);
+  else if(x.durationMin)st.push(`<span class="stamp">~${x.durationMin>=120?Math.round(x.durationMin/60)+" HR":x.durationMin+" MIN"}</span>`);
+  if(x.audience.family)st.push('<span class="stamp">FAMILY</span>');
+  if(x.audience.adults21)st.push('<span class="stamp">21+</span>');
+  if(x.petFriendly)st.push('<span class="stamp">DOGS OK</span>');
+  return`<div class="stamps">${st.join("")}</div>`
+}
+function cardHTML(x,slot,pools,withActs){
+  const dist=x.lat?Math.round(hav(pools.olat,pools.olng,x.lat,x.lng)):null;
+  const maps=x.lat?`https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lng}`:`https://www.google.com/maps/search/${encodeURIComponent(x.name+" "+x.town+" CT")}`;
+  const locked=slot&&state.locked.has(slot.key);
+  /* places link straight to the business / government site; events link to the
+     ctvisit event page (the always-current source) plus tickets when available */
+  const info=x.type==="event"
+    ?(x.url?`<a class="srclink" href="${esc(x.url)}" rel="noopener" target="_blank">Event info ↗</a>`:"")+
+     (x.bookingUrl?`<a class="srclink" href="${esc(x.bookingUrl)}" rel="noopener" target="_blank">Tickets ↗</a>`:"")
+    :(x.website?`<a class="srclink" href="${esc(x.website)}" rel="noopener" target="_blank">Website ↗</a>`:"");
+  return`<article class="card" data-key="${slot?slot.key:""}">
+  <div class="art">${artBlock(x.type==="event"?x.eventType:x.imageCategory)}</div>
+  <div class="body">
+    ${slot?`<p class="slotlab">${slot.label}</p>`:""}
+    <h3>${esc(x.name)}</h3>
+    <p class="meta">${esc(x.town||x.venue||"Connecticut")}${dist!==null?` · ~${dist} mi away`:""}${x.type==="event"&&x.venue?` · ${esc(x.venue)}`:""}</p>
+    ${x.description?`<p class="desc">${esc(x.description)}</p>`:""}
+    ${stampRow(x,pools.season)}
+    ${withActs?`<div class="acts">
+      <button class="btn shuffle" data-key="${slot.key}">SHUFFLE</button>
+      <button class="btn lock ${locked?"locked":""}" data-key="${slot.key}" aria-pressed="${locked}">${locked?"LOCKED":"LOCK"}</button>
+      <a class="srclink" href="${maps}" rel="noopener" target="_blank">Directions</a>
+      ${info}
+    </div>`:`<div class="acts"><a class="srclink" href="${maps}" rel="noopener" target="_blank">Directions</a>${info}</div>`}
+  </div></article>`
+}
+function renderPlan(pools){
+  const slots=slotsFor(state.mode);let html="",day=null,filled=0;
+  for(const slot of slots){
+    if(slot.day!==day){day=slot.day;html+=`<h2 class="dayhdr">${day}</h2>`}
+    const x=byId[state.slots[slot.key]];
+    if(x){html+=cardHTML(x,slot,pools,true);filled++}
+    else html+=`<div class="empty"><strong>${slot.label}:</strong> nothing matches these filters — try a longer drive or different dates.</div>`
+  }
+  $("#plan").innerHTML=html;
+  $("#shuffleAll").disabled=$("#share").disabled=$("#print").disabled=!filled;
+  $("#poolnote").textContent=`${pools.places.length} places + ${pools.events.length} events within range`;
+  document.querySelectorAll("#plan .shuffle").forEach(b=>b.onclick=()=>{shuffleSlot(b.dataset.key)});
+  document.querySelectorAll("#plan .lock").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.key;state.locked.has(k)?state.locked.delete(k):state.locked.add(k);renderPlan(basePools())});
+}
+function shuffleSlot(key){
+  const pools=basePools(),slots=slotsFor(state.mode),slot=slots.find(s=>s.key===key);
+  const used=new Set(Object.values(state.slots));
+  let anchor=null;
+  if(!slot.anchor){const a=byId[state.slots[key.split("-")[0]+"-morning"]];if(a&&a.lat)anchor=a}
+  const cands=candidates(slot,pools,anchor,used);
+  const chosen=pick(cands,true);
+  if(chosen){state.slots[key]=chosen.id;renderPlan(pools)}
+  else{delete state.slots[key];renderPlan(pools)}
+}
+
+/* ====================== surprise mode (scratch-off) ====================== */
+let surprisePick=null,scratched=false;
+function drawCard(){
+  const pools=basePools(),win=dateWindow();
+  let pool=[...pools.places.filter(p=>p.type!=="lodging"&&p.type!=="food"&&costOK(p,p.type)),...pools.events.filter(e=>costOK(e,"event"))];
+  const preferred=pool.filter(audiencePrefer);
+  if(preferred.length>=5)pool=preferred;
+  surprisePick=pick(pool,true);
+  const wrap=$("#scratchwrap");
+  if(!surprisePick){wrap.innerHTML=`<div class="empty">Nothing in range with these filters — widen the drive or dates.</div>`;$("#revealNow").hidden=true;return}
+  wrap.innerHTML=cardHTML(surprisePick,null,pools,false)+(scratched?"":`<canvas id="foil"></canvas>`);
+  $("#surpriseNote").textContent=surprisePick.curated?"★ A bucket-list pick.":"";
+  $("#draw").textContent="DRAW AGAIN";
+  if(!scratched)initFoil();else $("#revealNow").hidden=true;
+}
+const BEE=`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<ellipse cx="21" cy="13" rx="11" ry="7" fill="#F5EFDC" opacity=".9"/>
+<ellipse cx="41" cy="11" rx="11" ry="7" fill="#F5EFDC" opacity=".9"/>
+<ellipse cx="31" cy="34" rx="18" ry="14" fill="#D9A441" stroke="#1E2A44" stroke-width="2.5"/>
+<path d="M23 21v26M31 20v28M39 21v26" stroke="#1E2A44" stroke-width="4.5"/>
+<circle cx="12" cy="30" r="7" fill="#1E2A44"/>
+<path d="M49 34h6" stroke="#1E2A44" stroke-width="3" stroke-linecap="round"/>
+</svg>`;
+function initFoil(){
+  const c=$("#foil");if(!c)return;
+  $("#revealNow").hidden=false;
+  const wrap=$("#scratchwrap"),card=$("#scratchwrap .card"),x=c.getContext("2d");
+  const HEX=16;
+  let W=0,H=0,offX=0,offY=0,cells=[],done=0,down=false,lastX=null;
+  const bee=document.createElement("div");
+  bee.className="bee idle";bee.innerHTML=BEE;wrap.appendChild(bee);
+  function hexPath(cx,cy,r){
+    x.beginPath();
+    for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),px=cx+r*Math.cos(a),py=cy+r*Math.sin(a);i?x.lineTo(px,py):x.moveTo(px,py)}
+    x.closePath();
+  }
+  function paint(){
+    /* pin the canvas to the card's exact box (relative to the wrap) so the
+       comb always covers precisely the card being revealed */
+    const wr=wrap.getBoundingClientRect(),r=card.getBoundingClientRect();
+    W=r.width;H=r.height;offX=r.left-wr.left;offY=r.top-wr.top;
+    c.style.left=offX+"px";c.style.top=offY+"px";
+    c.style.width=W+"px";c.style.height=H+"px";
+    c.width=Math.round(W*devicePixelRatio);c.height=Math.round(H*devicePixelRatio);
+    x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    x.globalCompositeOperation="source-over";
+    cells=[];done=0;
+    const dx=HEX*1.732,dy=HEX*1.5;
+    for(let row=0;row*dy<H+HEX;row++)
+      for(let col=0;(row%2?dx/2:0)+col*dx<W+dx;col++)
+        cells.push({x:(row%2?dx/2:0)+col*dx,y:row*dy,c:false});
+    const tones=["#D9A441","#E2B257","#CB9430"];
+    cells.forEach((cell,i)=>{
+      x.fillStyle=tones[i%3];hexPath(cell.x,cell.y,HEX-1);x.fill();
+      x.strokeStyle="#A87B1F";x.lineWidth=1.5;x.stroke();
+    });
+    x.fillStyle=PAL.ink;x.textAlign="center";
+    x.font="600 24px Oswald, sans-serif";x.fillText("DRAG THE BEE",W/2,H/2-8);
+    x.font="600 13px Oswald, sans-serif";x.fillText("CLEAR THE COMB · FIND YOUR ADVENTURE",W/2,H/2+16);
+    bee.style.left=(offX+W/2-22)+"px";bee.style.top=(offY+H/2+34)+"px";
+  }
+  requestAnimationFrame(paint);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(!done&&$("#foil"))paint()});
+  if(window.ResizeObserver){
+    const ro=new ResizeObserver(()=>{if(!done&&$("#foil"))paint();else ro.disconnect()});
+    ro.observe(card);
+  }
+  function move(ev){
+    /* map pointer to comb coordinates, scale-proof even if the canvas box
+       and bitmap ever disagree (zoom, mid-load reflow, etc.) */
+    const b=c.getBoundingClientRect();
+    const px=(ev.clientX-b.left)*(b.width?W/b.width:1);
+    const py=(ev.clientY-b.top)*(b.height?H/b.height:1);
+    bee.classList.remove("idle");
+    bee.style.left=(offX+px-22)+"px";bee.style.top=(offY+py-22)+"px";
+    if(lastX!==null&&Math.abs(ev.clientX-lastX)>2)bee.style.transform=`rotate(${ev.clientX>lastX?10:-10}deg) scaleX(${ev.clientX>lastX?-1:1})`;
+    lastX=ev.clientX;
+    if(!down)return;
+    x.globalCompositeOperation="destination-out";
+    for(const cell of cells){
+      if(!cell.c&&(cell.x-px)**2+(cell.y-py)**2<(HEX*2.4)**2){
+        cell.c=true;done++;
+        hexPath(cell.x,cell.y,HEX+1.5);x.fill();
+      }
+    }
+    if(done/cells.length>0.55)reveal();
+  }
+  c.onpointerdown=e=>{down=true;if(c.setPointerCapture)try{c.setPointerCapture(e.pointerId)}catch(_){};move(e);e.preventDefault()};
+  c.onpointermove=move;
+  c.onpointerup=c.onpointercancel=()=>{down=false};
+}
+function reveal(){
+  const c=$("#foil"),b=document.querySelector("#scratchwrap .bee");
+  if(c){c.style.transition="opacity .5s";c.style.opacity="0";setTimeout(()=>c.remove(),520)}
+  if(b){b.style.transition="opacity .5s";b.style.opacity="0";setTimeout(()=>b.remove(),520)}
+  $("#revealNow").hidden=true;scratched=true;
+}
+
+/* ====================== share / restore ====================== */
+function encodeState(){
+  const f={t:$("#town").value,d:$("#drive").value,w:$("#when").value,who:state.who,c:state.cost,m:state.mode,s:state.slots,l:[...state.locked]};
+  return"#"+btoa(unescape(encodeURIComponent(JSON.stringify(f))))
+}
+function restoreState(){
+  if(location.hash.length<3)return false;
+  try{
+    const f=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+    $("#town").value=f.t;$("#drive").value=f.d;$("#when").value=f.w;
+    setChips("#who",f.who);state.who=f.who;setChips("#cost",f.c);state.cost=f.c;
+    setMode(f.m);state.slots=f.s||{};state.locked=new Set(f.l||[]);
+    if(f.m!=="surprise"){renderPlan(basePools())}
+    return true
+  }catch(e){return false}
+}
+function setChips(sel,v){document.querySelectorAll(sel+" .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===v))}
+function updateWhenNote(){
+  const win=dateWindow(),ss=[...seasonsInWindow(win)];
+  const f=d=>d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+  const endShown=new Date(+win.end-864e5);
+  $("#whennote").textContent=`Planning for ${f(win.start)}${+endShown>+win.start?" – "+f(endShown):""} · ${ss.join("/")} season${ss.length>1?"s":""} · events matched to these dates`;
+}
+function setMode(m){
+  state.mode=m;
+  document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  $("#planner").hidden=m==="surprise";$("#surprise").hidden=m!=="surprise";
+}
+
+/* ====================== wiring ====================== */
+(function init(){
+  const sel=$("#town");
+  Object.keys(TOWNS).sort().forEach(t=>{const o=document.createElement("option");o.value=o.textContent=t;sel.appendChild(o)});
+  sel.value=TOWNS["Hartford"]?"Hartford":Object.keys(TOWNS)[0];
+  document.querySelectorAll("#who .chip").forEach(c=>c.onclick=()=>{setChips("#who",c.dataset.v);state.who=c.dataset.v});
+  document.querySelectorAll("#cost .chip").forEach(c=>c.onclick=()=>{setChips("#cost",c.dataset.v);state.cost=c.dataset.v});
+  document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+  $("#build").onclick=()=>{state.locked.clear();buildPlan(false)};
+  $("#shuffleAll").onclick=()=>buildPlan(true);
+  $("#print").onclick=()=>window.print();
+  $("#share").onclick=async()=>{
+    const url=location.origin+location.pathname+encodeState();
+    try{await navigator.clipboard.writeText(url);$("#share").textContent="COPIED!";setTimeout(()=>$("#share").textContent="COPY SHARE LINK",1500)}
+    catch(e){prompt("Copy this link:",url)}
+  };
+  $("#draw").onclick=()=>{drawCard()};
+  $("#revealNow").onclick=reveal;
+  $("#when").addEventListener("change",updateWhenNote);
+  updateWhenNote();
+  const ageDays=(Date.now()-new Date(window.CT_PLACES.generated))/864e5;
+  $("#datastamp").textContent=`Data refreshed ${new Date(window.CT_PLACES.generated).toLocaleDateString()} · ${PLACES.length.toLocaleString()} places · ${EVENTS.length.toLocaleString()} events`;
+  if(ageDays>14){
+    const w=document.createElement("p");
+    w.style.color="var(--ember)";w.style.fontWeight="600";
+    w.textContent=`⚠ Event data is ${Math.round(ageDays)} days old — newer events may be missing. Run the refresh pipeline (or check the nightly job).`;
+    document.querySelector("footer.site").prepend(w);
+  }
+  restoreState();
+})();
+</script>
+</body>
+</html>
