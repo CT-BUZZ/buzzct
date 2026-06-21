@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BuzzCT — plan your Connecticut adventure</title>
+<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT builds your Connecticut day trip or weekend, or the bee reveals a surprise adventure. 4,000+ places and 1,000+ live events.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Connecticut Buzz brand palette: cream / navy / gold */
+  --cream:#F5EFDC; --paper:#E8DFC4; --forest:#003366; --forest2:#2C5F8A;
+  --ember:#C75B2B; --gold:#D9A441; --ink:#1E2A44; --ink60:#4A5572;
+  --shadow:0 10px 30px rgba(0,51,102,.12); --shadow-sm:0 3px 10px rgba(0,51,102,.10);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 3',system-ui,sans-serif;font-size:16px;line-height:1.55}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px 64px}
+.disp{font-family:'Oswald',sans-serif;letter-spacing:.04em}
+
+/* ---- branded hero ---------------------------------------------------- */
+.hero{position:relative;overflow:hidden;background:
+   radial-gradient(120% 140% at 50% -30%,var(--forest2) 0%,var(--forest) 55%,#00203f 100%);
+   color:var(--cream);text-align:center;padding:38px 20px 30px;margin:0 -16px 0;
+   border-bottom-left-radius:26px;border-bottom-right-radius:26px}
+.hero .comb{position:absolute;inset:0;opacity:.10;pointer-events:none}
+.brand{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:10px}
+.brand .logo{display:block;height:64px;width:auto;max-width:90vw;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
+.brand .wordmark{font-family:'Oswald',sans-serif;font-weight:600;font-size:42px;letter-spacing:.10em;line-height:1;margin:0;color:var(--cream)}
+.brand .wordmark .alt{color:var(--gold)}
+.brand .beemark{width:46px;height:46px;margin-bottom:2px}
+.poweredby{position:relative;margin:12px 0 0;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.20em;color:var(--gold);text-transform:uppercase}
+.poweredby a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(217,164,65,.4)}
+.hero .lede{position:relative;margin:14px auto 0;max-width:520px;color:#EAE3CC;font-size:15.5px}
+.rule{height:5px;background:repeating-linear-gradient(90deg,var(--gold) 0 22px,var(--ember) 22px 30px,var(--cream) 30px 52px);border-radius:3px;margin:18px auto 0;max-width:240px;opacity:.9}
+
+/* ---- filter card ----------------------------------------------------- */
+.panel{background:#FCFAF1;border:1.5px solid var(--paper);border-radius:18px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.frow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
+.frow:last-of-type{margin-bottom:0}
+.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:150px}
+.field.wide{flex-basis:100%}
+.field label{font-family:'Oswald',sans-serif;font-size:11.5px;letter-spacing:.14em;color:var(--forest);text-transform:uppercase}
+select,input[type=date],input[type=text]{appearance:none;background:#fff;border:1.5px solid #cdd7cf;border-radius:11px;padding:11px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s}
+select:focus,input:focus{outline:none;border-color:var(--forest);box-shadow:0 0 0 3px rgba(0,51,102,.15)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231F4D3A' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* ---- town combobox --------------------------------------------------- */
+.townrow{display:flex;gap:8px;align-items:stretch}
+.ac{position:relative;flex:1}
+.ac input{width:100%;padding-right:36px}
+.ac .clr{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--ink60);font-size:20px;line-height:1;cursor:pointer;padding:4px;display:none}
+.ac.has-val .clr{display:block}
+.ac-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 6px);background:#fff;border:1.5px solid var(--paper);border-radius:12px;box-shadow:var(--shadow);max-height:264px;overflow:auto;display:none}
+.ac-list.open{display:block}
+.ac-item{padding:10px 13px;font-size:15px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #f0ead7}
+.ac-item:last-child{border-bottom:none}
+.ac-item .rg{color:var(--ink60);font-size:12.5px}
+.ac-item[aria-selected=true],.ac-item:hover{background:var(--cream)}
+.ac-item b{color:var(--ember);font-weight:600}
+.ac-empty{padding:12px 13px;color:var(--ink60);font-size:14px}
+.nearbtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.06em;border:1.5px solid var(--forest);background:#fff;color:var(--forest);border-radius:11px;padding:0 14px;cursor:pointer;white-space:nowrap}
+.nearbtn:hover{background:var(--forest);color:var(--cream)}
+.nearbtn svg{width:15px;height:15px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;border:1.5px solid #cdd7cf;border-radius:999px;background:#fff;color:var(--forest);padding:8px 16px;cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--forest)}
+.chip[aria-pressed=true]{background:var(--forest);color:var(--cream);border-color:var(--forest)}
+.modes{display:flex;gap:8px;margin:22px 0 0;background:var(--paper);padding:5px;border-radius:13px}
+.mode{flex:1;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.08em;padding:12px 6px;border-radius:9px;border:none;background:transparent;color:var(--forest);cursor:pointer;transition:.15s}
+.mode:hover{background:rgba(255,255,255,.55)}
+.mode[aria-pressed=true]{background:var(--ember);color:var(--cream);box-shadow:var(--shadow-sm)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:18px 0 4px}
+.btn{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;border:1.5px solid var(--forest);border-radius:10px;background:#fff;color:var(--forest);padding:10px 16px;cursor:pointer;transition:.15s}
+.btn:hover:not(:disabled){background:var(--forest);color:var(--cream)}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--ink);box-shadow:var(--shadow-sm);font-size:14px}
+.btn.primary:hover:not(:disabled){background:var(--ember);border-color:var(--ember);color:var(--cream)}
+.btn:disabled{opacity:.4;cursor:default}
+.note{font-size:13px;color:var(--ink60)}
+
+.dayhdr{font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:.12em;color:var(--ember);margin:30px 0 4px;display:flex;align-items:baseline;gap:10px}
+.card{background:#fff;border:1.5px solid var(--paper);border-radius:16px;overflow:hidden;margin:14px 0;display:grid;grid-template-columns:160px 1fr;box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.card .art{background:var(--paper);position:relative}
+.card .art svg{display:block;width:100%;height:100%;min-height:150px}
+.card .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .body{padding:13px 16px 14px;min-width:0}
+.slotlab{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.16em;color:var(--ember);margin:0 0 2px}
+.card h3{margin:0 0 4px;font-family:'Oswald',sans-serif;font-weight:600;font-size:19px;line-height:1.25;color:var(--ink)}
+.meta{font-size:13px;color:var(--ink60);margin:0 0 8px}
+.route{display:inline-block;font-size:11.5px;color:var(--forest2);font-weight:600;margin:0 0 9px;letter-spacing:.02em;background:rgba(0,51,102,.09);border-radius:999px;padding:3px 10px}
+.dayhdr .mi{font-family:'Source Sans 3',sans-serif;font-size:12.5px;letter-spacing:.02em;color:var(--forest2);font-weight:600;background:rgba(0,51,102,.09);border-radius:999px;padding:2px 10px}
+.desc{font-size:14px;margin:0 0 10px;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.stamps{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.stamp{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.06em;color:var(--forest);border:1.5px dashed var(--forest);border-radius:999px;padding:4px 9px;white-space:nowrap}
+.acts{display:flex;gap:7px;flex-wrap:wrap}
+.acts .btn{padding:6px 11px;font-size:12px}
+.btn.locked{background:var(--forest);color:var(--cream)}
+a.srclink{color:var(--forest2);font-size:13px;align-self:center}
+.empty{background:#FBF7EA;border:1.5px dashed var(--ember);border-radius:14px;padding:18px;margin:14px 0;color:var(--ink60);font-size:14px}
+.weatherbar{display:flex;align-items:center;gap:10px;background:#EAF1F8;border:1.5px solid #Bcd2e6;border:1.5px solid #BCD2E6;border-radius:13px;padding:12px 15px;margin:14px 0 2px;font-size:14px;color:var(--forest)}
+.weatherbar b{font-weight:600}
+.weatherbar .ic{font-size:20px;line-height:1}
+
+.scratchwrap{position:relative;max-width:430px;margin:18px auto}
+.scratchwrap .card{grid-template-columns:1fr;margin:0}
+.scratchwrap .card .art svg{min-height:190px}
+#foil{position:absolute;border-radius:14px;touch-action:none;cursor:none}
+.bee{position:absolute;width:44px;height:44px;pointer-events:none;z-index:5}
+.bee.idle{animation:bee-bob 1.6s ease-in-out infinite}
+@keyframes bee-bob{0%,100%{margin-top:0}50%{margin-top:-9px}}
+.surprisebar{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.tagline{font-size:13px;color:var(--ink60);text-align:center;margin:4px 0 0}
+
+footer.site{margin-top:40px;border-top:1.5px solid var(--paper);padding-top:16px;font-size:12.5px;color:var(--ink60)}
+footer.site a{color:var(--forest2)}
+@media (max-width:560px){
+  .card{grid-template-columns:1fr}
+  .card .art svg{min-height:120px;max-height:140px}
+  .hero{padding:30px 16px 24px}
+  .brand .wordmark{font-size:34px}
+  .brand .logo{height:52px}
+  .townrow{flex-wrap:wrap}
+  .nearbtn{flex-basis:100%;justify-content:center;padding:11px 14px}
+}
+@media print{
+  .hero .comb,.panel,.modes,.toolbar,.acts,footer.site .noprint,.surprisebar{display:none!important}
+  .hero{background:#fff;color:var(--forest);border-radius:0;padding:10px 0}
+  .poweredby,.brand .wordmark .alt{color:var(--ember)}
+  body{background:#fff}
+  .card{break-inside:avoid;border-color:#ccc;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <svg class="comb" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs><pattern id="hx" width="42" height="48" patternUnits="userSpaceOnUse" patternTransform="translate(0,0)">
+      <path d="M21 2 39 13v22L21 46 3 35V13z" fill="none" stroke="#F5EFDC" stroke-width="2"/>
+      <path d="M0 26 18 37v22L0 70m42-44 18 11v22L42 70" fill="none" stroke="#F5EFDC" stroke-width="2"/>
+    </pattern></defs>
+    <rect width="400" height="200" fill="url(#hx)"/>
+  </svg>
+  <div class="wrap" style="padding-bottom:0">
+    <div class="brand">
+      <!-- Drop your logo at data/img/logo.svg (or .png). It auto-replaces the wordmark below. -->
+      <img class="logo" id="brandLogo" src="data/img/logo.svg" alt="BuzzCT — a Connecticut Buzz project" style="display:none"
+           onload="this.style.display='block';var w=document.getElementById('wordmark');if(w)w.style.display='none'"
+           onerror="this.remove()">
+      <div id="wordmark" style="display:flex;flex-direction:column;align-items:center">
+        <svg class="beemark" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="21" cy="13" rx="11" ry="7" fill="#F5EFDC" opacity=".92"/>
+          <ellipse cx="41" cy="11" rx="11" ry="7" fill="#F5EFDC" opacity=".92"/>
+          <ellipse cx="31" cy="34" rx="18" ry="14" fill="#D9A441" stroke="#1E2A44" stroke-width="2.5"/>
+          <path d="M23 21v26M31 20v28M39 21v26" stroke="#1E2A44" stroke-width="4.5"/>
+          <circle cx="12" cy="30" r="7" fill="#1E2A44"/>
+          <path d="M49 34h6" stroke="#1E2A44" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <h1 class="wordmark">BUZZ<span class="alt">CT</span></h1>
+      </div>
+    </div>
+    <p class="poweredby">Powered by <a href="https://connecticutbuzz.com" rel="noopener">Connecticut Buzz</a></p>
+    <p class="lede">4,000+ places. 1,000+ live events. One good day out — built around where you are and the time of day.</p>
+    <div class="rule" role="presentation"></div>
+  </div>
+</header>
+
+<div class="wrap">
+<section class="panel" aria-label="Filters">
+  <div class="frow">
+    <div class="field wide"><label for="townSearch">STARTING FROM</label>
+      <div class="townrow">
+        <div class="ac" id="townAC">
+          <input type="text" id="townSearch" autocomplete="off" placeholder="Search your town…"
+                 role="combobox" aria-expanded="false" aria-controls="townList" aria-autocomplete="list">
+          <button type="button" class="clr" id="townClear" aria-label="Clear">×</button>
+          <div class="ac-list" id="townList" role="listbox"></div>
+        </div>
+        <button type="button" class="nearbtn" id="nearMe">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.4" fill="currentColor"/><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="2"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Near me
+        </button>
+      </div>
+      <input type="hidden" id="town">
+    </div>
+  </div>
+  <div class="frow">
+    <div class="field"><label for="drive">MAX DRIVE</label>
+      <select id="drive">
+        <option value="15">15 min</option>
+        <option value="30" selected>30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+      </select></div>
+    <div class="field"><label for="when">WHEN</label>
+      <select id="when">
+        <option value="today">Today</option>
+        <option value="weekend" selected>This weekend</option>
+        <option value="week">Next 7 days</option>
+        <option value="month">Next 30 days</option>
+      </select></div>
+  </div>
+  <div class="frow">
+    <div class="field"><label>WHO'S GOING</label>
+      <div class="chips" id="who" role="group">
+        <button class="chip" data-v="any" aria-pressed="true">EVERYONE</button>
+        <button class="chip" data-v="family" aria-pressed="false">FAMILY W/ KIDS</button>
+        <button class="chip" data-v="adults" aria-pressed="false">21+ CREW</button>
+      </div></div>
+    <div class="field"><label>BUDGET</label>
+      <div class="chips" id="cost" role="group">
+        <button class="chip" data-v="any" aria-pressed="true">ANY</button>
+        <button class="chip" data-v="free" aria-pressed="false">FREE STUFF ONLY</button>
+      </div></div>
+  </div>
+  <p class="note" id="whennote" style="margin:4px 0 0"></p>
+  <div class="modes" role="group" aria-label="Mode">
+    <button class="mode" data-m="day" aria-pressed="true">PLAN MY DAY</button>
+    <button class="mode" data-m="weekend" aria-pressed="false">PLAN A WEEKEND</button>
+    <button class="mode" data-m="surprise" aria-pressed="false">SURPRISE ME</button>
+  </div>
+</section>
+
+<section id="planner">
+  <div class="toolbar">
+    <button class="btn primary" id="build">BUILD MY ADVENTURE</button>
+    <button class="btn" id="shuffleAll" disabled>SHUFFLE UNLOCKED</button>
+    <button class="btn" id="share" disabled>COPY SHARE LINK</button>
+    <button class="btn" id="print" disabled>PRINT</button>
+    <span class="note" id="poolnote"></span>
+  </div>
+  <div id="plan"></div>
+</section>
+
+<section id="surprise" hidden>
+  <div class="toolbar" style="justify-content:center">
+    <span class="note">Drag the bee around the hive. It knows the way.</span>
+  </div>
+  <div class="scratchwrap" id="scratchwrap"></div>
+  <div class="surprisebar">
+    <button class="btn primary" id="draw">RELEASE THE BEE</button>
+    <button class="btn" id="revealNow" hidden>JUST REVEAL IT</button>
+  </div>
+  <p class="tagline" id="surpriseNote"></p>
+</section>
+
+<footer class="site">
+  <p><strong>BuzzCT</strong> · a <a href="https://connecticutbuzz.com" rel="noopener">Connecticut Buzz</a> project. Place &amp; event data sourced from <a href="https://ctvisit.com" rel="noopener">CTvisit.com</a> (CT Office of Tourism), refreshed nightly. Hours, prices, and conditions change — always check the venue link before you go. Outdoor activities at your own risk.</p>
+  <p class="noprint" id="datastamp"></p>
+</footer>
+</div>
+
+<script src="data/towns.js"></script>
+<script src="data/places.js"></script>
+<script src="data/events.js"></script>
+<script>
+"use strict";
+/* ====================== art: flat poster scenes per category ====================== */
+const PAL={cream:"#F5EFDC",paper:"#E8DFC4",forest:"#003366",forest2:"#2C5F8A",ember:"#C75B2B",gold:"#D9A441",ink:"#1E2A44"};
+function scene(inner){return `<svg viewBox="0 0 300 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><rect width="300" height="200" fill="${PAL.paper}"/>${inner}</svg>`}
+const sun=`<circle cx="225" cy="58" r="30" fill="${PAL.gold}"/>`;
+const ART={
+hike:scene(sun+`<path d="M0 140 80 64 160 140Z" fill="${PAL.forest}"/><path d="M105 140 210 44 300 140Z" fill="${PAL.forest2}"/><rect y="138" width="300" height="62" fill="${PAL.ember}"/><path d="M130 200c10-26 36-34 22-52h12c18 20-8 32 8 52z" fill="${PAL.cream}"/>`),
+beach:scene(sun+`<rect y="118" width="300" height="34" fill="${PAL.forest2}"/><rect y="150" width="300" height="50" fill="${PAL.gold}"/><path d="M88 152 120 92l6 4-26 56z" fill="${PAL.ember}"/><path d="M120 92c-30-22-58-8-62 14 26-14 44-12 62-14z" fill="${PAL.ember}"/><path d="M120 92c34-10 52 8 50 28-20-20-36-22-50-28z" fill="${PAL.ember}"/>`),
+water:scene(sun+`<path d="M0 110 70 60 150 110Z" fill="${PAL.forest}"/><rect y="108" width="300" height="92" fill="${PAL.forest2}"/><path d="M70 152l34-18h92l34 18c-26 12-134 12-160 0z" fill="${PAL.ember}"/><path d="M150 134V92m0 0 28 30" stroke="${PAL.cream}" stroke-width="6" fill="none"/>`),
+lighthouse:scene(sun+`<rect y="140" width="300" height="60" fill="${PAL.forest2}"/><path d="M128 140 138 52h24l10 88z" fill="${PAL.cream}"/><path d="M132 112h36m-38 16h40" stroke="${PAL.ember}" stroke-width="10"/><rect x="134" y="36" width="32" height="18" fill="${PAL.ink}"/><circle cx="150" cy="45" r="6" fill="${PAL.gold}"/>`),
+museum:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="60" y="86" width="180" height="64" fill="${PAL.cream}"/><path d="M48 86 150 38l102 48z" fill="${PAL.ember}"/><rect x="78" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="118" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="158" y="98" width="16" height="52" fill="${PAL.forest}"/><rect x="198" y="98" width="16" height="52" fill="${PAL.forest}"/>`+sun.replace('cy="58"','cy="40"')),
+brewery:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest}"/><rect x="100" y="62" width="74" height="92" rx="8" fill="${PAL.gold}"/><rect x="174" y="84" width="26" height="44" rx="12" fill="${PAL.gold}"/><rect x="100" y="62" width="74" height="22" rx="8" fill="${PAL.cream}"/><circle cx="118" cy="58" r="9" fill="${PAL.cream}"/><circle cx="142" cy="50" r="7" fill="${PAL.cream}"/><circle cx="160" cy="58" r="6" fill="${PAL.cream}"/>`),
+winery:scene(sun+`<path d="M0 150c40-26 90-26 130 0z" fill="${PAL.forest2}"/><path d="M120 150c50-30 120-30 180 0z" fill="${PAL.forest}"/><rect y="148" width="300" height="52" fill="${PAL.ember}"/><path d="M138 58c0 26 8 36 12 40v28h-14v8h40v-8h-14V98c4-4 12-14 12-40z" fill="${PAL.ink}" opacity=".85"/>`),
+farm:scene(sun+`<rect y="142" width="300" height="58" fill="${PAL.forest2}"/><rect x="74" y="92" width="110" height="50" fill="${PAL.ember}"/><path d="M66 92 129 56l63 36z" fill="${PAL.ink}"/><rect x="116" y="108" width="26" height="34" fill="${PAL.ink}"/><rect x="196" y="74" width="30" height="68" rx="4" fill="${PAL.cream}"/><circle cx="211" cy="74" r="15" fill="${PAL.cream}"/>`),
+garden:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><g stroke="${PAL.forest}" stroke-width="5"><path d="M80 150v-44m70 44v-58m70 58v-44"/></g><circle cx="80" cy="96" r="16" fill="${PAL.ember}"/><circle cx="150" cy="82" r="18" fill="${PAL.gold}"/><circle cx="220" cy="96" r="16" fill="${PAL.ember}"/>`),
+park:scene(sun+`<rect y="146" width="300" height="54" fill="${PAL.forest2}"/><rect x="142" y="96" width="14" height="52" fill="${PAL.ink}"/><circle cx="149" cy="74" r="40" fill="${PAL.forest}"/><rect x="210" y="120" width="56" height="8" fill="${PAL.ember}"/><path d="M214 128v20m48-20v20" stroke="${PAL.ember}" stroke-width="7"/>`),
+theater:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><path d="M0 0h60c0 70 20 110 50 130v70H0z" fill="${PAL.ember}"/><path d="M300 0h-60c0 70-20 110-50 130v70h110z" fill="${PAL.ember}"/><circle cx="150" cy="92" r="34" fill="${PAL.gold}"/><path d="M150 70l7 15 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z" fill="${PAL.ink}"/>`),
+family:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M118 150c-6-44 10-78 32-92 22 14 38 48 32 92z" fill="${PAL.ember}"/><path d="M150 58v92" stroke="${PAL.cream}" stroke-width="5"/><path d="M126 150c-2-34 8-62 24-78 16 16 26 44 24 78" fill="none" stroke="${PAL.cream}" stroke-width="4"/>`),
+cafe:scene(`<rect y="150" width="300" height="50" fill="${PAL.ember}"/><rect x="96" y="76" width="84" height="64" rx="10" fill="${PAL.cream}"/><path d="M180 88h18a16 16 0 0 1 0 32h-18" fill="none" stroke="${PAL.cream}" stroke-width="9"/><path d="M118 62c-6-10 6-12 2-22m22 22c-6-10 6-12 2-22" stroke="${PAL.forest2}" stroke-width="5" fill="none"/>`+sun.replace('r="30"','r="22"')),
+restaurant:scene(`<rect width="300" height="200" fill="${PAL.forest}"/><circle cx="150" cy="100" r="56" fill="${PAL.cream}"/><circle cx="150" cy="100" r="34" fill="${PAL.paper}"/><path d="M64 60v80m-12-80v28a12 12 0 0 0 24 0V60" stroke="${PAL.gold}" stroke-width="6" fill="none"/><path d="M242 60c-10 18-10 36 0 44v36" stroke="${PAL.gold}" stroke-width="6" fill="none"/>`),
+shopping:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="76" y="84" width="148" height="66" fill="${PAL.cream}"/><path d="M70 84h160l-10-26H80z" fill="${PAL.ember}"/><path d="M76 84c0 12 10 12 10 0s10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0 10-12 10 0 10 12 10 0" fill="${PAL.ember}"/><rect x="130" y="108" width="40" height="42" fill="${PAL.forest}"/>`),
+lodging:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><circle cx="226" cy="54" r="24" fill="${PAL.cream}"/><circle cx="234" cy="48" r="22" fill="${PAL.ink}"/><rect x="60" y="110" width="180" height="44" rx="8" fill="${PAL.cream}"/><rect x="60" y="92" width="60" height="26" rx="12" fill="${PAL.gold}"/><path d="M52 84v76m196-50v50" stroke="${PAL.cream}" stroke-width="7"/>`),
+"live-music":scene(`<rect width="300" height="200" fill="${PAL.forest}"/><circle cx="120" cy="124" r="26" fill="${PAL.gold}"/><rect x="142" y="48" width="9" height="76" fill="${PAL.gold}"/><path d="M151 48c18 4 28 14 24 30-8-10-16-12-24-14z" fill="${PAL.gold}"/><circle cx="216" cy="110" r="16" fill="${PAL.cream}"/><rect x="229" y="56" width="6" height="54" fill="${PAL.cream}"/>`),
+festival:scene(sun+`<path d="M0 30 50 58 100 30 150 58 200 30 250 58 300 30" fill="none" stroke="${PAL.ember}" stroke-width="8"/><rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M90 150 150 84l60 66z" fill="${PAL.ember}"/><path d="M150 84v66" stroke="${PAL.cream}" stroke-width="5"/><path d="M120 150c8-18 52-18 60 0z" fill="${PAL.ink}"/>`),
+art:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="92" y="58" width="116" height="84" fill="${PAL.cream}"/><path d="M92 142 130 174m78-32-38 32m-20-32v40" stroke="${PAL.ink}" stroke-width="6"/><circle cx="128" cy="92" r="14" fill="${PAL.gold}"/><path d="M150 124c14-26 34-30 44-46" stroke="${PAL.ember}" stroke-width="8" fill="none"/>`),
+kids:scene(sun+`<rect y="152" width="300" height="48" fill="${PAL.forest2}"/><path d="M120 56 162 86l-30 42-42-30z" fill="${PAL.ember}"/><path d="M132 128c-8 22 8 34 0 52" stroke="${PAL.ember}" stroke-width="5" fill="none"/><path d="M120 56l42 30M90 98l72-12" stroke="${PAL.cream}" stroke-width="4"/>`),
+history:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="138" y="56" width="9" height="94" fill="${PAL.ink}"/><path d="M147 58h74l-14 16 14 16h-74z" fill="${PAL.ember}"/>`),
+"food-drink":scene(`<rect width="300" height="200" fill="${PAL.ember}"/><path d="M82 134a68 68 0 0 1 136 0z" fill="${PAL.cream}"/><rect x="64" y="134" width="172" height="12" rx="6" fill="${PAL.ink}"/><circle cx="150" cy="62" r="8" fill="${PAL.cream}"/>`),
+sports:scene(sun+`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><path d="M96 64v86m0-86 96 16-96 22z" fill="${PAL.ember}"/><path d="M96 64v86" stroke="${PAL.ink}" stroke-width="7"/>`),
+market:scene(`<rect y="150" width="300" height="50" fill="${PAL.forest2}"/><rect x="80" y="96" width="140" height="54" fill="${PAL.cream}"/><path d="M72 96h156l-12-30H84z" fill="${PAL.forest}"/><path d="M80 96c0 11 9 11 9 0s9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0 9 11 9 0 9-11 9 0" fill="${PAL.gold}"/><circle cx="116" cy="124" r="9" fill="${PAL.ember}"/><circle cx="138" cy="124" r="9" fill="${PAL.gold}"/><circle cx="160" cy="124" r="9" fill="${PAL.ember}"/>`),
+holiday:scene(`<rect width="300" height="200" fill="${PAL.ink}"/><path d="M150 36l10 22 24 3-17 17 4 24-21-11-21 11 4-24-17-17 24-3z" fill="${PAL.gold}"/><circle cx="80" cy="120" r="4" fill="${PAL.cream}"/><circle cx="220" cy="90" r="4" fill="${PAL.cream}"/><circle cx="190" cy="150" r="4" fill="${PAL.cream}"/><circle cx="110" cy="160" r="4" fill="${PAL.cream}"/>`),
+generic:scene(sun+`<path d="M0 132 90 84l80 48 70-36 60 36" fill="none" stroke="${PAL.forest}" stroke-width="10"/><rect y="148" width="300" height="52" fill="${PAL.forest2}"/><path d="M40 178h220" stroke="${PAL.cream}" stroke-width="5" stroke-dasharray="14 10"/>`)
+};
+const ART_ALIAS={outdoor:"hike",community:"festival",drink:"brewery",attraction:"generic",food:"restaurant",theaterEvt:"theater"};
+function artFor(cat){return ART[cat]||ART[ART_ALIAS[cat]]||ART.generic}
+/* Prefer a real illustration at data/img/{category}.webp when present;
+   the inline SVG sits underneath as automatic fallback (img removes itself on 404). */
+function artBlock(cat){
+  const c=ART[cat]?cat:(ART_ALIAS[cat]||"generic");
+  return artFor(c)+`<img src="data/img/${c}.webp" alt="" loading="lazy" onerror="this.remove()">`
+}
+
+/* ====================== data + helpers ====================== */
+const PLACES=window.CT_PLACES.items, EVENTS=window.CT_EVENTS.items, TOWNS=window.CT_TOWNS;
+/* ---- time-of-day refinement ----------------------------------------------
+   The source data tags every "attraction" as morning+afternoon, which lets
+   evening-only spots (cinemas, playhouses, breweries) surface in the morning
+   anchor and never at night. Re-derive a sensible window from the item's real
+   character (imageCategory / type) so suggestions match the part of day. */
+const TOD_BY_CAT={
+  /* daytime only — never schedule these at night */
+  hike:["morning","afternoon"],beach:["morning","afternoon"],water:["morning","afternoon"],
+  park:["morning","afternoon"],garden:["morning","afternoon"],farm:["morning","afternoon"],
+  lighthouse:["morning","afternoon"],market:["morning","afternoon"],history:["morning","afternoon"],
+  museum:["morning","afternoon"],art:["morning","afternoon"],shopping:["morning","afternoon"],
+  kids:["morning","afternoon"],family:["morning","afternoon"],sports:["morning","afternoon"],
+  cafe:["morning","afternoon"],
+  /* evening-leaning — matinee possible, but really an afternoon/night thing */
+  theater:["afternoon","evening"],"live-music":["afternoon","evening"],
+  brewery:["afternoon","evening"],winery:["afternoon","evening"],
+  restaurant:["afternoon","evening"],"food-drink":["afternoon","evening"],holiday:["afternoon","evening"],
+  /* all-day */
+  festival:["morning","afternoon","evening"],generic:["morning","afternoon"]
+};
+function refineTOD(x){
+  if(x.type==="event")return; /* events keep their real start-time window */
+  if(x.type==="lodging")return; /* lodging isn't time-slotted */
+  const byCat=TOD_BY_CAT[x.imageCategory];
+  if(byCat){x.timeOfDay=byCat.slice();return}
+  if(x.type==="food"||x.type==="drink")x.timeOfDay=["afternoon","evening"];
+  else x.timeOfDay=["morning","afternoon"];
+}
+PLACES.forEach(refineTOD);
+/* ---- seasonality refinement ----------------------------------------------
+   The source tags nearly every place as all-four-seasons, so date-bound spots
+   surface year-round — e.g. a cut-your-own Christmas tree farm showing up for a
+   weekend in June. Detect the unambiguous ones by name and pin them to the
+   months they actually operate, so they only appear in season. */
+const SEASONAL=[
+  {rx:/christmas|x-?mas|\btree farm\b/i,months:[11,12],seasons:["fall","winter"]},
+  {rx:/sugar ?house|sugar ?bush|maple syrup|maple sugar|\bsugaring\b/i,months:[2,3],seasons:["winter","spring"]}
+];
+function refineSeason(x){
+  if(x.type==="event")return; /* events carry real dates already */
+  for(const r of SEASONAL){if(r.rx.test(x.name)){x.months=r.months;x.seasons=r.seasons.slice();return}}
+}
+PLACES.forEach(refineSeason);
+/* ---- weather exposure ----------------------------------------------------
+   The data's `indoor` flag is unreliable (few places tagged), so derive
+   outdoor-ness from the (reliable) category instead. Used to gently steer
+   suggestions indoors when rain is in the forecast. */
+const OUTDOOR_CATS=new Set(["hike","beach","water","park","garden","farm","lighthouse","festival","market","sports"]);
+PLACES.forEach(p=>{p.outdoor=OUTDOOR_CATS.has(p.imageCategory)});
+EVENTS.forEach(e=>{e.outdoor=OUTDOOR_CATS.has(e.eventType)});
+const byId={}; PLACES.forEach(p=>byId[p.id]=p); EVENTS.forEach(e=>byId[e.id]=e);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function hav(a,b,c,d){const R=3959,t=x=>x*Math.PI/180,p=t(c-a),q=t(d-b),h=Math.sin(p/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(q/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function seasonOf(d){const m=d.getMonth();return m<2||m===11?"winter":m<5?"spring":m<8?"summer":"fall"}
+function fmtDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+(d.getHours()||d.getMinutes()?" · "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"")}
+/* weather bias: when rain is likely, down-weight (don't ban) outdoor picks */
+const WEATHER={active:false,rainy:false,label:"",day:"",prob:0};
+function weatherW(x){return (WEATHER.active&&WEATHER.rainy&&x.outdoor)?0.15:1}
+function pick(arr,weighted){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=(x.curated?(x.weight||3):1)*weatherW(x);tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
+/* Route-aware pick: keeps the weighted-random variety of pick() but biases
+   toward stops that make a short, forward leg from the previous stop, so the
+   day flows in one direction instead of doubling back. `prev` is the last
+   placed stop; `prevPt` is the stop before that (or the origin) used to read
+   the current heading. */
+function pickRouted(arr,prev,prevPt,pools,weighted){
+  if(!arr.length)return null;
+  if(!prev||!prev.lat)return pick(arr,weighted);
+  const ref=(prevPt&&prevPt.lat)?prevPt:{lat:pools.olat,lng:pools.olng};
+  let hx=prev.lng-ref.lng,hy=prev.lat-ref.lat;const hm=Math.hypot(hx,hy);
+  const haveHead=hm>1e-9;if(haveHead){hx/=hm;hy/=hm}
+  let tot=0;const ws=arr.map(c=>{
+    let w=(weighted?(c.curated?(c.weight||3):1):1)*weatherW(c);
+    if(c.lat){
+      const d=hav(prev.lat,prev.lng,c.lat,c.lng);
+      w*=1/Math.pow(1+d/8,1.4);            /* favor short hops (~8mi scale) */
+      if(haveHead){
+        let vx=c.lng-prev.lng,vy=c.lat-prev.lat;const vm=Math.hypot(vx,vy);
+        if(vm>1e-9){const dot=(vx/vm)*hx+(vy/vm)*hy; /* 1=straight on, -1=U-turn */
+          w*=0.05+0.95*Math.pow((dot+1)/2,1.6);} /* strongly punish reversing */
+      }
+    }else w*=0.4;
+    tot+=w;return w;
+  });
+  let r=Math.random()*tot;
+  for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i]}
+  return arr[arr.length-1];
+}
+
+/* ====================== filter state ====================== */
+const state={mode:"day",who:"any",cost:"any",slots:{},locked:new Set()};
+function dateWindow(){
+  const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());let end;
+  const v=$("#when").value;
+  if(v==="today"){end=new Date(+start+864e5)}
+  else if(v==="weekend"){const sat=new Date(+start+((6-start.getDay()+7)%7)*864e5);const s=start.getDay()===0?start:sat;return{start:s,end:new Date(+s+(start.getDay()===0?1:2)*864e5)}}
+  else if(v==="week"){end=new Date(+start+7*864e5)}
+  else{end=new Date(+start+30*864e5)}
+  return{start,end}
+}
+function origin(){const t=$("#town").value;return TOWNS[t]||[41.6,-72.7]}
+function radiusMiles(){return +$("#drive").value*0.7}
+function audienceOK(x){
+  if(state.who==="family")return x.audience.family||!x.audience.adults21;
+  if(state.who==="adults")return true;
+  return true
+}
+function audiencePrefer(x){
+  if(state.who==="family")return x.audience.family;
+  if(state.who==="adults")return x.audience.adults21;
+  return false
+}
+function costOK(x,slotType){
+  if(state.cost!=="free")return true;
+  if(slotType==="food")return true; /* meals are inherently paid */
+  return x.cost==="free"||x.cost==="unknown"&&x.type!=="event"
+}
+function inWindow(e,win){
+  const s=e.dates.start?new Date(e.dates.start):null,en=e.dates.end?new Date(e.dates.end):s;
+  return s&&s<win.end&&en>=win.start
+}
+function seasonsInWindow(win){
+  const s=new Set();
+  for(let t=+win.start;t<=+win.end;t+=864e5)s.add(seasonOf(new Date(t)));
+  return s
+}
+function monthsInWindow(win){
+  const s=new Set();
+  for(let t=+win.start;t<=+win.end;t+=864e5)s.add(new Date(t).getMonth()+1);
+  return s
+}
+function basePools(){
+  const [olat,olng]=origin(),R=radiusMiles(),win=dateWindow(),winSeasons=seasonsInWindow(win),winMonths=monthsInWindow(win);
+  const near=x=>x.lat&&hav(olat,olng,x.lat,x.lng)<=R;
+  /* month-bound places (tree farms, sugar houses) only show when the date
+     window actually overlaps the months they run */
+  const inSeason=p=>!p.months||p.months.some(m=>winMonths.has(m));
+  const places=PLACES.filter(p=>near(p)&&inSeason(p)&&p.seasons.some(s=>winSeasons.has(s))&&audienceOK(p)&&(state.who!=="family"||!(p.audience.adults21&&!p.audience.family)));
+  const events=EVENTS.filter(e=>near(e)&&inWindow(e,win)&&audienceOK(e));
+  return{places,events,win,season:seasonOf(win.start),olat,olng}
+}
+/* ---- forecast (Open-Meteo, no key) ---------------------------------------
+   Only meaningful for near-term plans, so we only check Today / This weekend.
+   On any failure we silently disable weather logic and plan as normal. */
+const WMO_WET=c=>(c>=51&&c<=67)||(c>=71&&c<=86)||(c>=95);
+const weatherCache={};
+async function ensureWeather(){
+  const when=$("#when").value;
+  if(when!=="today"&&when!=="weekend"){WEATHER.active=false;WEATHER.rainy=false;return}
+  WEATHER.active=true;
+  const [olat,olng]=origin(),win=dateWindow();
+  const iso=d=>new Date(+d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  const days=[];for(let t=+win.start;t<+win.end;t+=864e5)days.push(iso(new Date(t)));
+  const key=olat.toFixed(2)+","+olng.toFixed(2)+":"+days.join("|");
+  if(weatherCache[key]){Object.assign(WEATHER,weatherCache[key]);return}
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${olat}&longitude=${olng}&daily=precipitation_probability_max,weather_code&timezone=America%2FNew_York&forecast_days=10`;
+    const r=await fetch(u);if(!r.ok)throw 0;
+    const j=await r.json(),D=j.daily||{};
+    let worst={rainy:false,prob:0,day:"",label:""};
+    (D.time||[]).forEach((dt,i)=>{
+      if(!days.includes(dt))return;
+      const prob=D.precipitation_probability_max?.[i]??0, code=D.weather_code?.[i]??0;
+      const rainy=prob>=55||WMO_WET(code);
+      if(rainy&&prob>=worst.prob){
+        const nm=new Date(dt+"T12:00").toLocaleDateString("en-US",{weekday:"long"});
+        worst={rainy:true,prob,day:nm,label:`${nm}: ${prob}% chance of rain`};
+      }
+    });
+    const res={active:true,rainy:worst.rainy,prob:worst.prob,day:worst.day,label:worst.label};
+    weatherCache[key]=res;Object.assign(WEATHER,res);
+  }catch(e){WEATHER.active=false;WEATHER.rainy=false} /* offline / blocked → no weather logic */
+}
+
+/* ====================== itinerary engine ====================== */
+const DAY_SLOTS=[
+  {id:"morning",label:"MORNING ANCHOR",want:["hike","attraction"],tod:"morning",anchor:true},
+  {id:"lunch",label:"LUNCH",want:["food"],near:12},
+  {id:"afternoon",label:"AFTERNOON",want:["attraction","hike","event"],tod:"afternoon",near:18},
+  {id:"evening",label:"DINNER & EVENING",want:["food","drink","event"],tod:"evening",near:18}
+];
+function slotsFor(mode){
+  if(mode==="day")return DAY_SLOTS.map(s=>({...s,key:"d1-"+s.id,day:"YOUR DAY"}));
+  const mk=d=>DAY_SLOTS.map(s=>({...s,key:`d${d}-`+s.id,day:d===1?"SATURDAY":"SUNDAY"}));
+  return[...mk(1),...mk(2),{id:"stay",key:"stay",label:"WHERE TO STAY",day:"OVERNIGHT",want:["lodging"],near:20}]
+}
+function candidates(slot,pools,anchor,exclude){
+  const {places,events}=pools;let out=[];
+  const want=new Set(slot.want);
+  if(want.has("event")) out=out.concat(events.filter(e=>e.timeOfDay.includes(slot.tod||"afternoon")&&costOK(e,"event")));
+  out=out.concat(places.filter(p=>want.has(p.type)&&costOK(p,p.type)&&(!slot.tod||p.timeOfDay.includes(slot.tod)||p.type==="food"||p.type==="drink")));
+  if(slot.id==="evening"){
+    out=out.filter(x=>x.type!=="drink"||state.who!=="family");
+    if(state.who==="adults"){const dr=out.filter(x=>x.type==="drink"||x.audience.adults21);if(dr.length>2)out=dr.concat(out.filter(x=>x.type==="food").slice(0,30))}
+  }
+  out=out.filter(x=>!exclude.has(x.id));
+  if(anchor&&slot.near){
+    for(const r of[slot.near*0.6,slot.near,slot.near*1.8]){
+      const tight=out.filter(x=>x.lat&&hav(anchor.lat,anchor.lng,x.lat,x.lng)<=r);
+      if(tight.length>=3)return tight
+    }
+  }
+  return out
+}
+function buildPlan(keepLocked){
+  const pools=basePools(),slots=slotsFor(state.mode),used=new Set();
+  const old=state.slots;state.slots={};
+  for(const slot of slots){
+    if(keepLocked&&state.locked.has(slot.key)&&old[slot.key]&&byId[old[slot.key]]){
+      state.slots[slot.key]=old[slot.key];used.add(old[slot.key]);continue
+    }
+  }
+  /* Walk the slots in visiting order, chaining each pick off the previous
+     stop so the route moves forward. prev = last placed stop, prevPt = the one
+     before it (for heading). Both reset at the start of each day. */
+  let prev=null,prevPt=null,day=null;
+  for(const slot of slots){
+    if(slot.day!==day){day=slot.day;prev=null;prevPt=null}
+    if(state.slots[slot.key]){const x=byId[state.slots[slot.key]];if(x&&x.lat){prevPt=prev;prev=x}continue}
+    const cands=candidates(slot,pools,slot.anchor?null:prev,used);
+    const preferred=cands.filter(audiencePrefer);
+    const pool=preferred.length>=3?preferred:cands;
+    const chosen=slot.anchor?pick(pool,true):pickRouted(pool,prev,prevPt,pools,true);
+    if(chosen){state.slots[slot.key]=chosen.id;used.add(chosen.id);if(chosen.lat){prevPt=prev;prev=chosen}}
+  }
+  renderPlan(pools)
+}
+
+/* ====================== rendering ====================== */
+const STAMP_SEASON={winter:"❄ WINTER",spring:"❀ SPRING",summer:"☀ SUMMER",fall:"✦ FALL"};
+function stampRow(x,season){
+  const st=[];
+  /* show the item's true seasonality, not the current season */
+  if(x.type==="event"){}
+  else if(!x.seasons||x.seasons.length>=4)st.push('<span class="stamp">ALL YEAR</span>');
+  else st.push(`<span class="stamp">${x.seasons.map(s=>STAMP_SEASON[s]||s.toUpperCase()).join(" · ")}</span>`);
+  if(x.cost==="free")st.push('<span class="stamp">FREE</span>');
+  else if(x.cost==="paid")st.push('<span class="stamp">PAID</span>');
+  if(x.type==="event"&&x.dates.start)st.push(`<span class="stamp">${esc(fmtDate(x.dates.start))}</span>`);
+  else if(x.durationMin)st.push(`<span class="stamp">~${x.durationMin>=120?Math.round(x.durationMin/60)+" HR":x.durationMin+" MIN"}</span>`);
+  if(x.audience.family)st.push('<span class="stamp">FAMILY</span>');
+  if(x.audience.adults21)st.push('<span class="stamp">21+</span>');
+  if(x.petFriendly)st.push('<span class="stamp">DOGS OK</span>');
+  return`<div class="stamps">${st.join("")}</div>`
+}
+function cardHTML(x,slot,pools,withActs,legTxt){
+  const dist=x.lat?Math.round(hav(pools.olat,pools.olng,x.lat,x.lng)):null;
+  const maps=x.lat?`https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lng}`:`https://www.google.com/maps/search/${encodeURIComponent(x.name+" "+x.town+" CT")}`;
+  const locked=slot&&state.locked.has(slot.key);
+  /* places link straight to the business / government site; events link to the
+     ctvisit event page (the always-current source) plus tickets when available */
+  const info=x.type==="event"
+    ?(x.url?`<a class="srclink" href="${esc(x.url)}" rel="noopener" target="_blank">Event info ↗</a>`:"")+
+     (x.bookingUrl?`<a class="srclink" href="${esc(x.bookingUrl)}" rel="noopener" target="_blank">Tickets ↗</a>`:"")
+    :(x.website?`<a class="srclink" href="${esc(x.website)}" rel="noopener" target="_blank">Website ↗</a>`:"");
+  return`<article class="card" data-key="${slot?slot.key:""}">
+  <div class="art">${artBlock(x.type==="event"?x.eventType:x.imageCategory)}</div>
+  <div class="body">
+    ${slot?`<p class="slotlab">${slot.label}</p>`:""}
+    <h3>${esc(x.name)}</h3>
+    <p class="meta">${esc(x.town||x.venue||"Connecticut")}${dist!==null?` · ~${dist} mi away`:""}${x.type==="event"&&x.venue?` · ${esc(x.venue)}`:""}</p>
+    ${legTxt?`<p class="route">↳ ${esc(legTxt)}</p>`:""}
+    ${x.description?`<p class="desc">${esc(x.description)}</p>`:""}
+    ${stampRow(x,pools.season)}
+    ${withActs?`<div class="acts">
+      <button class="btn shuffle" data-key="${slot.key}">SHUFFLE</button>
+      <button class="btn lock ${locked?"locked":""}" data-key="${slot.key}" aria-pressed="${locked}">${locked?"LOCKED":"LOCK"}</button>
+      <a class="srclink" href="${maps}" rel="noopener" target="_blank">Directions</a>
+      ${info}
+    </div>`:`<div class="acts"><a class="srclink" href="${maps}" rel="noopener" target="_blank">Directions</a>${info}</div>`}
+  </div></article>`
+}
+function weatherBannerHTML(){
+  if(!WEATHER.active||!WEATHER.rainy)return"";
+  return`<div class="weatherbar"><span class="ic">☔</span><span><b>${esc(WEATHER.label)}.</b> Leaning toward indoor picks — shuffle any card to override.</span></div>`;
+}
+function renderPlan(pools){
+  const slots=slotsFor(state.mode);let html=weatherBannerHTML(),day=null,filled=0;
+  /* precompute total drive per day (home → stop1 → … → last stop) */
+  const dayTotals={};
+  {let d=null,p=null;
+   for(const slot of slots){
+     if(slot.day!==d){d=slot.day;p=null}
+     const x=byId[state.slots[slot.key]];
+     if(x&&x.lat){const from=p||{lat:pools.olat,lng:pools.olng};dayTotals[d]=(dayTotals[d]||0)+hav(from.lat,from.lng,x.lat,x.lng);p=x}
+   }}
+  let prev=null;
+  for(const slot of slots){
+    if(slot.day!==day){day=slot.day;prev=null;
+      const t=dayTotals[day]?Math.round(dayTotals[day]):0;
+      html+=`<h2 class="dayhdr">${day}${t?`<span class="mi">~${t} mi route</span>`:""}</h2>`}
+    const x=byId[state.slots[slot.key]];
+    if(x){
+      let legTxt=null;
+      if(x.lat){const from=prev||{lat:pools.olat,lng:pools.olng};const mi=Math.round(hav(from.lat,from.lng,x.lat,x.lng));legTxt=prev?`~${mi} mi from last stop`:`~${mi} mi from start`;prev=x}
+      html+=cardHTML(x,slot,pools,true,legTxt);filled++}
+    else html+=`<div class="empty"><strong>${slot.label}:</strong> nothing matches these filters — try a longer drive or different dates.</div>`
+  }
+  $("#plan").innerHTML=html;
+  $("#shuffleAll").disabled=$("#share").disabled=$("#print").disabled=!filled;
+  $("#poolnote").textContent=`${pools.places.length} places + ${pools.events.length} events within range`;
+  document.querySelectorAll("#plan .shuffle").forEach(b=>b.onclick=()=>{shuffleSlot(b.dataset.key)});
+  document.querySelectorAll("#plan .lock").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.key;state.locked.has(k)?state.locked.delete(k):state.locked.add(k);renderPlan(basePools())});
+}
+function shuffleSlot(key){
+  const pools=basePools(),slots=slotsFor(state.mode),slot=slots.find(s=>s.key===key);
+  const used=new Set(Object.values(state.slots));
+  /* find the two stops placed just before this one within the same day, so the
+     re-rolled stop still chains onto the route instead of jumping across it */
+  let prev=null,prevPt=null,day=null;
+  for(const s of slots){
+    if(s.day!==day){day=s.day;prev=null;prevPt=null}
+    if(s.key===key)break;
+    const x=byId[state.slots[s.key]];if(x&&x.lat){prevPt=prev;prev=x}
+  }
+  const cands=candidates(slot,pools,slot.anchor?null:prev,used);
+  const chosen=slot.anchor?pick(cands,true):pickRouted(cands,prev,prevPt,pools,true);
+  if(chosen){state.slots[key]=chosen.id;renderPlan(pools)}
+  else{delete state.slots[key];renderPlan(pools)}
+}
+
+/* ====================== surprise mode (scratch-off) ====================== */
+let surprisePick=null,scratched=false;
+function drawCard(){
+  const pools=basePools(),win=dateWindow();
+  let pool=[...pools.places.filter(p=>p.type!=="lodging"&&p.type!=="food"&&costOK(p,p.type)),...pools.events.filter(e=>costOK(e,"event"))];
+  const preferred=pool.filter(audiencePrefer);
+  if(preferred.length>=5)pool=preferred;
+  surprisePick=pick(pool,true);
+  const wrap=$("#scratchwrap");
+  if(!surprisePick){wrap.innerHTML=`<div class="empty">Nothing in range with these filters — widen the drive or dates.</div>`;$("#revealNow").hidden=true;return}
+  wrap.innerHTML=weatherBannerHTML()+cardHTML(surprisePick,null,pools,false)+(scratched?"":`<canvas id="foil"></canvas>`);
+  $("#surpriseNote").textContent=surprisePick.curated?"★ A bucket-list pick.":"";
+  $("#draw").textContent="DRAW AGAIN";
+  if(!scratched)initFoil();else $("#revealNow").hidden=true;
+}
+const BEE=`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<ellipse cx="21" cy="13" rx="11" ry="7" fill="#F5EFDC" opacity=".9"/>
+<ellipse cx="41" cy="11" rx="11" ry="7" fill="#F5EFDC" opacity=".9"/>
+<ellipse cx="31" cy="34" rx="18" ry="14" fill="#D9A441" stroke="#1E2A44" stroke-width="2.5"/>
+<path d="M23 21v26M31 20v28M39 21v26" stroke="#1E2A44" stroke-width="4.5"/>
+<circle cx="12" cy="30" r="7" fill="#1E2A44"/>
+<path d="M49 34h6" stroke="#1E2A44" stroke-width="3" stroke-linecap="round"/>
+</svg>`;
+function initFoil(){
+  const c=$("#foil");if(!c)return;
+  $("#revealNow").hidden=false;
+  const wrap=$("#scratchwrap"),card=$("#scratchwrap .card"),x=c.getContext("2d");
+  const HEX=16;
+  let W=0,H=0,offX=0,offY=0,cells=[],done=0,down=false,lastX=null;
+  const bee=document.createElement("div");
+  bee.className="bee idle";bee.innerHTML=BEE;wrap.appendChild(bee);
+  function hexPath(cx,cy,r){
+    x.beginPath();
+    for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),px=cx+r*Math.cos(a),py=cy+r*Math.sin(a);i?x.lineTo(px,py):x.moveTo(px,py)}
+    x.closePath();
+  }
+  function paint(){
+    /* pin the canvas to the card's exact box (relative to the wrap) so the
+       comb always covers precisely the card being revealed */
+    const wr=wrap.getBoundingClientRect(),r=card.getBoundingClientRect();
+    W=r.width;H=r.height;offX=r.left-wr.left;offY=r.top-wr.top;
+    c.style.left=offX+"px";c.style.top=offY+"px";
+    c.style.width=W+"px";c.style.height=H+"px";
+    c.width=Math.round(W*devicePixelRatio);c.height=Math.round(H*devicePixelRatio);
+    x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    x.globalCompositeOperation="source-over";
+    cells=[];done=0;
+    const dx=HEX*1.732,dy=HEX*1.5;
+    for(let row=0;row*dy<H+HEX;row++)
+      for(let col=0;(row%2?dx/2:0)+col*dx<W+dx;col++)
+        cells.push({x:(row%2?dx/2:0)+col*dx,y:row*dy,c:false});
+    const tones=["#D9A441","#E2B257","#CB9430"];
+    cells.forEach((cell,i)=>{
+      x.fillStyle=tones[i%3];hexPath(cell.x,cell.y,HEX-1);x.fill();
+      x.strokeStyle="#A87B1F";x.lineWidth=1.5;x.stroke();
+    });
+    x.fillStyle=PAL.ink;x.textAlign="center";
+    x.font="600 24px Oswald, sans-serif";x.fillText("DRAG THE BEE",W/2,H/2-8);
+    x.font="600 13px Oswald, sans-serif";x.fillText("CLEAR THE COMB · FIND YOUR ADVENTURE",W/2,H/2+16);
+    bee.style.left=(offX+W/2-22)+"px";bee.style.top=(offY+H/2+34)+"px";
+  }
+  requestAnimationFrame(paint);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(!done&&$("#foil"))paint()});
+  if(window.ResizeObserver){
+    const ro=new ResizeObserver(()=>{if(!done&&$("#foil"))paint();else ro.disconnect()});
+    ro.observe(card);
+  }
+  function move(ev){
+    /* map pointer to comb coordinates, scale-proof even if the canvas box
+       and bitmap ever disagree (zoom, mid-load reflow, etc.) */
+    const b=c.getBoundingClientRect();
+    const px=(ev.clientX-b.left)*(b.width?W/b.width:1);
+    const py=(ev.clientY-b.top)*(b.height?H/b.height:1);
+    bee.classList.remove("idle");
+    bee.style.left=(offX+px-22)+"px";bee.style.top=(offY+py-22)+"px";
+    if(lastX!==null&&Math.abs(ev.clientX-lastX)>2)bee.style.transform=`rotate(${ev.clientX>lastX?10:-10}deg) scaleX(${ev.clientX>lastX?-1:1})`;
+    lastX=ev.clientX;
+    if(!down)return;
+    x.globalCompositeOperation="destination-out";
+    for(const cell of cells){
+      if(!cell.c&&(cell.x-px)**2+(cell.y-py)**2<(HEX*2.4)**2){
+        cell.c=true;done++;
+        hexPath(cell.x,cell.y,HEX+1.5);x.fill();
+      }
+    }
+    if(done/cells.length>0.55)reveal();
+  }
+  c.onpointerdown=e=>{down=true;if(c.setPointerCapture)try{c.setPointerCapture(e.pointerId)}catch(_){};move(e);e.preventDefault()};
+  c.onpointermove=move;
+  c.onpointerup=c.onpointercancel=()=>{down=false};
+}
+function reveal(){
+  const c=$("#foil"),b=document.querySelector("#scratchwrap .bee");
+  if(c){c.style.transition="opacity .5s";c.style.opacity="0";setTimeout(()=>c.remove(),520)}
+  if(b){b.style.transition="opacity .5s";b.style.opacity="0";setTimeout(()=>b.remove(),520)}
+  $("#revealNow").hidden=true;scratched=true;
+}
+
+/* ====================== share / restore ====================== */
+function encodeState(){
+  const f={t:$("#town").value,d:$("#drive").value,w:$("#when").value,who:state.who,c:state.cost,m:state.mode,s:state.slots,l:[...state.locked]};
+  return"#"+btoa(unescape(encodeURIComponent(JSON.stringify(f))))
+}
+function restoreState(){
+  if(location.hash.length<3)return false;
+  try{
+    const f=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+    setTown(f.t);$("#drive").value=f.d;$("#when").value=f.w;
+    setChips("#who",f.who);state.who=f.who;setChips("#cost",f.c);state.cost=f.c;
+    setMode(f.m);state.slots=f.s||{};state.locked=new Set(f.l||[]);
+    if(f.m!=="surprise"){renderPlan(basePools())}
+    return true
+  }catch(e){return false}
+}
+function setChips(sel,v){document.querySelectorAll(sel+" .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===v))}
+function updateWhenNote(){
+  const win=dateWindow(),ss=[...seasonsInWindow(win)];
+  const f=d=>d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+  const endShown=new Date(+win.end-864e5);
+  $("#whennote").textContent=`Planning for ${f(win.start)}${+endShown>+win.start?" – "+f(endShown):""} · ${ss.join("/")} season${ss.length>1?"s":""} · events matched to these dates`;
+}
+function setMode(m){
+  state.mode=m;
+  document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  $("#planner").hidden=m==="surprise";$("#surprise").hidden=m!=="surprise";
+}
+
+/* ====================== town picker (search + near me) ====================== */
+const TOWN_NAMES=Object.keys(TOWNS).sort();
+const TOWN_REGION={}; /* friendly secondary label, sourced from place data */
+PLACES.forEach(p=>{if(p.town&&p.region&&!TOWN_REGION[p.town])TOWN_REGION[p.town]=p.region});
+function setTown(name){
+  if(!name||!TOWNS[name])return false;
+  $("#town").value=name;
+  const inp=$("#townSearch");inp.value=name;
+  $("#townAC").classList.add("has-val");
+  closeTownList();
+  return true;
+}
+function closeTownList(){const l=$("#townList");l.classList.remove("open");l.innerHTML="";$("#townSearch").setAttribute("aria-expanded","false");acIndex=-1}
+let acIndex=-1,acMatches=[];
+function renderTownList(q){
+  const list=$("#townList");
+  const norm=q.trim().toLowerCase();
+  let matches;
+  if(!norm){matches=TOWN_NAMES.slice(0,40)}
+  else{
+    const starts=[],contains=[];
+    for(const t of TOWN_NAMES){const lt=t.toLowerCase();if(lt.startsWith(norm))starts.push(t);else if(lt.includes(norm))contains.push(t)}
+    matches=starts.concat(contains).slice(0,40);
+  }
+  acMatches=matches;acIndex=-1;
+  if(!matches.length){list.innerHTML=`<div class="ac-empty">No CT town matches "${esc(q)}"</div>`;list.classList.add("open");return}
+  const hi=t=>{if(!norm)return esc(t);const i=t.toLowerCase().indexOf(norm);return i<0?esc(t):esc(t.slice(0,i))+"<b>"+esc(t.slice(i,i+norm.length))+"</b>"+esc(t.slice(i+norm.length))};
+  list.innerHTML=matches.map((t,i)=>`<div class="ac-item" role="option" id="ac-${i}" data-town="${esc(t)}" aria-selected="false"><span>${hi(t)}</span>${TOWN_REGION[t]?`<span class="rg">${esc(TOWN_REGION[t])}</span>`:""}</div>`).join("");
+  list.classList.add("open");$("#townSearch").setAttribute("aria-expanded","true");
+  list.querySelectorAll(".ac-item").forEach(el=>el.onmousedown=e=>{e.preventDefault();setTown(el.dataset.town)});
+}
+function moveAc(d){
+  if(!acMatches.length)return;
+  acIndex=(acIndex+d+acMatches.length)%acMatches.length;
+  $("#townList").querySelectorAll(".ac-item").forEach((el,i)=>{const on=i===acIndex;el.setAttribute("aria-selected",on);if(on)el.scrollIntoView({block:"nearest"})});
+}
+function nearestTown(lat,lng){let best=null,bd=1e9;for(const t of TOWN_NAMES){const c=TOWNS[t];const d=hav(lat,lng,c[0],c[1]);if(d<bd){bd=d;best=t}}return{town:best,miles:bd}}
+function initTownPicker(){
+  const inp=$("#townSearch"),ac=$("#townAC");
+  inp.addEventListener("input",()=>{ac.classList.toggle("has-val",!!inp.value);renderTownList(inp.value)});
+  inp.addEventListener("focus",()=>{if(!$("#townList").classList.contains("open"))renderTownList(inp.value)});
+  inp.addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();if(!$("#townList").classList.contains("open"))renderTownList(inp.value);else moveAc(1)}
+    else if(e.key==="ArrowUp"){e.preventDefault();moveAc(-1)}
+    else if(e.key==="Enter"){if(acIndex>=0&&acMatches[acIndex]){e.preventDefault();setTown(acMatches[acIndex])}else if(acMatches.length===1){e.preventDefault();setTown(acMatches[0])}}
+    else if(e.key==="Escape"){closeTownList()}
+  });
+  inp.addEventListener("blur",()=>{setTimeout(()=>{
+    /* if they typed something that doesn't resolve, snap back to current valid town */
+    if(inp.value!==$("#town").value)inp.value=$("#town").value;
+    ac.classList.toggle("has-val",!!inp.value);closeTownList();
+  },120)});
+  $("#townClear").onclick=()=>{inp.value="";$("#town").value="";ac.classList.remove("has-val");inp.focus();renderTownList("")};
+  $("#nearMe").onclick=()=>{
+    const btn=$("#nearMe");
+    if(!navigator.geolocation){btn.textContent="Location not supported";return}
+    const orig=btn.innerHTML;btn.textContent="Locating…";btn.disabled=true;
+    navigator.geolocation.getCurrentPosition(
+      pos=>{const{latitude,longitude}=pos.coords;const n=nearestTown(latitude,longitude);
+        btn.disabled=false;btn.innerHTML=orig;
+        if(n.town){setTown(n.town);
+          $("#whennote").textContent=`📍 Nearest CT town: ${n.town} (~${Math.round(n.miles)} mi). Adjust if you like, then Build.`}},
+      err=>{btn.disabled=false;btn.innerHTML=orig;
+        $("#whennote").textContent=err.code===1?"Location permission was blocked — search your town instead.":"Couldn't get your location — search your town instead.";},
+      {enableHighAccuracy:false,timeout:8000,maximumAge:6e5});
+  };
+}
+
+/* ====================== wiring ====================== */
+(function init(){
+  initTownPicker();
+  setTown(TOWNS["Hartford"]?"Hartford":TOWN_NAMES[0]);
+  document.querySelectorAll("#who .chip").forEach(c=>c.onclick=()=>{setChips("#who",c.dataset.v);state.who=c.dataset.v});
+  document.querySelectorAll("#cost .chip").forEach(c=>c.onclick=()=>{setChips("#cost",c.dataset.v);state.cost=c.dataset.v});
+  document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+  $("#build").onclick=async()=>{
+    state.locked.clear();const b=$("#build"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";
+    await ensureWeather();b.textContent=t;b.disabled=false;buildPlan(false)};
+  $("#shuffleAll").onclick=()=>buildPlan(true);
+  $("#print").onclick=()=>window.print();
+  $("#share").onclick=async()=>{
+    const url=location.origin+location.pathname+encodeState();
+    try{await navigator.clipboard.writeText(url);$("#share").textContent="COPIED!";setTimeout(()=>$("#share").textContent="COPY SHARE LINK",1500)}
+    catch(e){prompt("Copy this link:",url)}
+  };
+  $("#draw").onclick=async()=>{const b=$("#draw"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";await ensureWeather();b.textContent=t;b.disabled=false;drawCard()};
+  $("#revealNow").onclick=reveal;
+  $("#when").addEventListener("change",updateWhenNote);
+  updateWhenNote();
+  const ageDays=(Date.now()-new Date(window.CT_PLACES.generated))/864e5;
+  $("#datastamp").textContent=`Data refreshed ${new Date(window.CT_PLACES.generated).toLocaleDateString()} · ${PLACES.length.toLocaleString()} places · ${EVENTS.length.toLocaleString()} events`;
+  if(ageDays>14){
+    const w=document.createElement("p");
+    w.style.color="var(--ember)";w.style.fontWeight="600";
+    w.textContent=`⚠ Event data is ${Math.round(ageDays)} days old — newer events may be missing. Run the refresh pipeline (or check the nightly job).`;
+    document.querySelector("footer.site").prepend(w);
+  }
+  restoreState();
+})();
+</script>
+</body>
+</html>

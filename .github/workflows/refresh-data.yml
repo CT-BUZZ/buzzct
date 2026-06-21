@@ -1,0 +1,44 @@
+name: Nightly data refresh
+
+on:
+  schedule:
+    - cron: "15 7 * * *"   # 3:15am ET daily
+  workflow_dispatch:        # manual run button
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pull and normalize data
+        run: python3 pipeline/fetch_ctvisit.py
+        # Script exits non-zero (failing this job) if the new pull returns
+        # <60% of yesterday's record count — old data stays in place.
+
+      - name: Enrich from OpenStreetMap + Wikidata
+        working-directory: pipeline
+        run: python3 enrich_places.py --sources osm,wikidata
+        # Per-source fetch errors are caught and skipped; this step only fails
+        # if the merged count would fall below the ctvisit base.
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "data-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Nightly data refresh $(date -u +%F)"
+          git push
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "::error::Data refresh failed — yesterday's data is still live. Check the log."
+        # GitHub emails you on workflow failure by default (Settings → Notifications).
