@@ -90,13 +90,34 @@ def parse_bindings(bindings, towns, tr_map):
     return out
 
 
+PAGE = 2000  # rows per request — keeps each response well under proxy/WDQS size caps
+
+
+def fetch_rows(page=PAGE, max_pages=40):
+    """Page through WDQS with ORDER BY / LIMIT / OFFSET.
+
+    One unpaged query returns >1 MB, which some network proxies truncate
+    mid-stream (and which flirts with WDQS's 60s timeout). Paging keeps every
+    response small and makes a partial failure recoverable.
+    """
+    rows, offset = [], 0
+    for _ in range(max_pages):
+        q = QUERY + f"\nORDER BY ?item ?type\nLIMIT {page} OFFSET {offset}"
+        url = ENDPOINT + "?format=json&query=" + urllib.parse.quote(q)
+        batch = C.http_json(url).get("results", {}).get("bindings", [])
+        rows.extend(batch)
+        print(f"  wikidata: {len(rows)} rows", flush=True)
+        if len(batch) < page:
+            break
+        offset += page
+    return rows
+
+
 def fetch(towns=None, tr_map=None):
     towns = towns if towns is not None else C.load_towns()
     tr_map = tr_map if tr_map is not None else C.town_region_map()
     print("Wikidata: querying WDQS…", flush=True)
-    url = ENDPOINT + "?format=json&query=" + urllib.parse.quote(QUERY)
-    data = C.http_json(url)
-    rows = data.get("results", {}).get("bindings", [])
+    rows = fetch_rows()
     print(f"Wikidata: {len(rows)} rows", flush=True)
     places = parse_bindings(rows, towns, tr_map)
     print(f"Wikidata: {len(places)} usable places", flush=True)

@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "15 7 * * *"   # 3:15am ET daily
   workflow_dispatch:        # manual run button
+  # NOTE: GitHub disables scheduled workflows in repos with no commit activity
+  # for 60 days. The nightly commit keeps this alive on its own, but if the job
+  # ever fails for two months straight the schedule silently stops. Check
+  # Actions → Nightly data refresh if data/events.json stops moving.
 
 permissions:
   contents: write
@@ -28,6 +32,13 @@ jobs:
         run: python3 enrich_places.py --sources osm,wikidata
         # Per-source fetch errors are caught and skipped; this step only fails
         # if the merged count would fall below the ctvisit base.
+
+      - name: Validate before publishing
+        run: python3 pipeline/validate_data.py
+        # Catches a pull that "succeeded" but produced unshippable data:
+        # stale timestamps, expired events, missing coordinates, or a .js
+        # wrapper out of sync with its .json. Failing here means nothing is
+        # committed and yesterday's data stays live.
 
       - name: Commit refreshed data
         run: |

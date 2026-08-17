@@ -327,13 +327,38 @@ def merge_curated(places):
     return places, matched
 
 
-def sanity_ok(path, new_count):
+def sanity_ok(path, new_count, sources=None):
+    """Compare a fresh pull against the previous file, like for like.
+
+    `sources` limits the comparison to items this script owns. places.json is
+    later rewritten by enrich_places.py with thousands of OSM/Wikidata records;
+    without the filter the gate would compare our ~4k ctvisit pull against that
+    enriched total and fail every single night.
+    """
     if not path.exists():
         return True
     try:
-        old = len(json.loads(path.read_text()).get("items", []))
+        items = json.loads(path.read_text()).get("items", [])
     except Exception:
         return True
+    if sources:
+        items = [i for i in items if i.get("source") in sources]
+    old = len(items)
+    return old == 0 or new_count >= old * SANITY_FLOOR
+
+
+def sanity_ok_events(path, new_count, today):
+    """Events version of the gate: compare against the previous file's events
+    that are *still upcoming*. Comparing against its raw total would misread the
+    normal expiry of past events as a failed pull."""
+    if not path.exists():
+        return True
+    try:
+        items = json.loads(path.read_text()).get("items", [])
+    except Exception:
+        return True
+    old = sum(1 for i in items
+              if (i.get("dates", {}).get("end") or i.get("dates", {}).get("start") or "9999") >= today)
     return old == 0 or new_count >= old * SANITY_FLOOR
 
 
@@ -348,6 +373,16 @@ def main():
 
     places = [norm_listing(r, linc) for r in lrecs]
     places = [p for p in places if p and p["name"]]
+    # A listing with no coordinates can't answer "what's near me" or land on the
+    # map, so it would be dead weight in every view. Upstream leaves a handful
+    # ungeocoded each pull; drop them rather than ship unreachable cards.
+    dropped = [p for p in places if not isinstance(p.get("lat"), (int, float))
+               or not isinstance(p.get("lng"), (int, float))]
+    if dropped:
+        print(f"Dropped {len(dropped)} listings with no coordinates: "
+              + ", ".join(p["name"] for p in dropped[:5])
+              + (" …" if len(dropped) > 5 else ""))
+        places = [p for p in places if p not in dropped]
     events = [norm_event(r, einc) for r in erecs]
     today = datetime.date.today().isoformat()
     events = [e for e in events if e["name"] and (e["dates"]["end"] or e["dates"]["start"] or "9999") >= today]
@@ -355,10 +390,10 @@ def main():
     places, matched = merge_curated(places)
     print(f"Curated entries matched to listings: {matched}")
 
-    if not sanity_ok(DATA / "places.json", len(places)):
+    if not sanity_ok(DATA / "places.json", len(places), sources={"ctvisit", "curated"}):
         print("SANITY GATE: new places count dropped >40% vs previous — keeping old data.", file=sys.stderr)
         sys.exit(1)
-    if not sanity_ok(DATA / "events.json", len(events)):
+    if not sanity_ok_events(DATA / "events.json", len(events), today):
         print("SANITY GATE: new events count dropped >40% vs previous — keeping old data.", file=sys.stderr)
         sys.exit(1)
 

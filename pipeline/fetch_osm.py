@@ -8,10 +8,16 @@ Connecticut and maps OSM tags into the canonical places schema.
 Run standalone to preview:  python3 pipeline/fetch_osm.py
 Or import fetch()/parse_elements() from enrich_places.py.
 """
-import re, sys, urllib.parse
+import re, sys, time, urllib.parse
 import common as C
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
+# Tried in order; the main instance returns 429/504 whenever it is busy.
+MIRRORS = [
+    OVERPASS,
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.osm.ch/api/interpreter",
+]
 
 # One query, CT admin area, the POI families we care about. `out center tags`
 # returns a single coordinate for ways/relations (their centroid).
@@ -31,6 +37,38 @@ out center tags;
 """
 
 _FREE_OUTDOOR = {"park", "nature_reserve", "garden"}
+
+# Nobody plans an adventure around a drive-thru. OSM's amenity=fast_food and the
+# national chains below are coverage noise for this app, so they never enter the
+# dataset. A chain with its own Wikidata item (a genuine landmark location) survives.
+CHAIN_PAT = re.compile(
+    r"\b(mcdonald|burger king|wendy|taco bell|kfc|kentucky fried|domino|papa john|"
+    r"pizza hut|subway|starbucks|dunkin|chipotle|panera|popeye|arby|five guys|"
+    r"wingstop|little caesar|sonic drive|jersey mike|moe.s southwest|chick-fil-a|"
+    r"friendly.s|applebee|olive garden|ihop|denny|cracker barrel|panda express|"
+    r"quiznos|firehouse subs|jimmy john|smashburger|shake shack|checkers|hardee|"
+    r"white castle|carl.s jr|del taco|bojangles|zaxby|culver|whataburger|in-n-out|"
+    r"dairy queen|baskin|cold stone|auntie anne|cinnabon|krispy kreme|tim hortons|"
+    r"wawa|7-eleven|cumberland farms)\b", re.I)
+
+
+def is_noise(tags):
+    """True for POIs that pad the count without being worth a trip."""
+    notable = tags.get("wikidata") or tags.get("wikipedia")
+    website = tags.get("website") or tags.get("contact:website")
+    if notable:
+        return False
+    if tags.get("amenity") == "fast_food":
+        return True
+    if CHAIN_PAT.search(tags.get("name", "")):
+        return True
+    # A named hill with no write-up and no site is a survey marker, not a hike.
+    if tags.get("natural") == "peak" and not website:
+        return True
+    # historic=yes / historic=building with nothing else is an unidentifiable pin.
+    if tags.get("historic") in ("building", "yes") and not website:
+        return True
+    return False
 
 
 def classify_osm(tags):
@@ -98,7 +136,7 @@ def parse_elements(elements, towns, tr_map):
     for el in elements:
         tags = el.get("tags") or {}
         name = (tags.get("name") or "").strip()
-        if not name:
+        if not name or is_noise(tags):
             continue
         lat, lng = _coords(el)
         if not C.in_ct(lat, lng):
@@ -125,7 +163,22 @@ def fetch(towns=None, tr_map=None):
     towns = towns if towns is not None else C.load_towns()
     tr_map = tr_map if tr_map is not None else C.town_region_map()
     print("OSM: querying Overpass…", flush=True)
-    data = C.http_json(OVERPASS, data="data=" + urllib.parse.quote(QUERY))
+    body = "data=" + urllib.parse.quote(QUERY)
+    last = None
+    for mirror in MIRRORS:
+        for attempt in range(2):
+            try:
+                data = C.http_json(mirror, data=body)
+                last = None
+                break
+            except Exception as e:      # 429/504 under load are routine on Overpass
+                last, data = e, None
+                print(f"  overpass {mirror} attempt {attempt + 1}: {e}", flush=True)
+                time.sleep(5 * (attempt + 1))
+        if last is None:
+            break
+    if last is not None:
+        raise last
     els = data.get("elements", [])
     print(f"OSM: {len(els)} raw elements", flush=True)
     places = parse_elements(els, towns, tr_map)

@@ -72,6 +72,7 @@ rewrites `data/places.json` + `places.js` with the combined set.
 | `pipeline/fetch_wikidata.py` | Wikidata via SPARQL. **CC0 — public domain.** Great for landmarks + descriptions. |
 | `pipeline/fetch_google.py` | Google Places. **OFF by default** — see the ToS warning below. |
 | `pipeline/enrich_places.py` | Orchestrator: fetch → dedup → merge → write. |
+| `pipeline/validate_data.py` | Post-refresh gate — see "Validation gate" below. |
 | `pipeline/test_enrich.py` | Offline fixture tests (no network). |
 
 ### Run it
@@ -82,6 +83,17 @@ python3 pipeline/enrich_places.py             # 2. add OSM + Wikidata
 python3 pipeline/enrich_places.py --dry-run   # preview counts, write nothing
 python3 pipeline/test_enrich.py               # offline tests
 ```
+
+Two things make enrichment actually complete rather than silently skip:
+`fetch_wikidata.py` pages WDQS in 2,000-row chunks (one unpaged query returns
+>1 MB, which some proxies truncate mid-stream and which flirts with WDQS's 60s
+timeout), and `fetch_osm.py` retries across three Overpass mirrors, since the
+main instance returns 429/504 whenever it is busy.
+
+`fetch_osm.py` also drops coverage noise before it enters the dataset — chain
+fast food, unlabeled `historic=yes` pins, and named hills with no write-up or
+website. An entry with its own Wikidata item is always kept. Tune `is_noise()`
+if the balance feels wrong.
 
 `--dry-run` writes `data/enrich_report.json` (per-source adds/dedups + region
 coverage before→after) and leaves `places.json` untouched. The nightly workflow
@@ -107,6 +119,29 @@ legal and financial — is yours.
 
 If a pull returns under 60% of the previous count (API outage, structure change),
 the script exits non-zero, the workflow fails, old data stays live, GitHub emails you.
+
+Both gates compare like with like, which matters more than it sounds:
+
+- **Places** are compared only against the previous file's `ctvisit`/`curated`
+  records. `enrich_places.py` rewrites `places.json` with ~11k extra OSM/Wikidata
+  entries, so an unfiltered comparison would pit a ~4k pull against a ~15k file
+  and fail the job every single night.
+- **Events** are compared against the previous file's *still-upcoming* events.
+  Past events expire out of every build by design; comparing against the raw
+  total would read normal expiry as a collapsed pull.
+
+## Validation gate
+
+`pipeline/validate_data.py` runs after enrichment and refuses to publish data that
+is technically well-formed but wrong: `events.json` older than 48h (the refresh
+isn't actually running), any event whose end date has passed, places without
+coordinates, duplicate ids, counts under the floors, or a `.js` wrapper that has
+drifted out of sync with its `.json`.
+
+```bash
+python3 pipeline/validate_data.py                    # exit 1 on any problem
+python3 pipeline/validate_data.py --max-age-hours 72
+```
 
 ## Attribution & permission
 
