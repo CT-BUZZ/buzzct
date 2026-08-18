@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BuzzCT — plan your Connecticut adventure</title>
-<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT builds your Connecticut day trip or weekend, or the bee reveals a surprise adventure. 4,000+ places and 1,000+ live events.">
+<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT builds your Connecticut day trip or weekend, or the bee reveals a surprise adventure. 15,000+ places and 900+ live events.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -21,19 +21,21 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 
 .disp{font-family:'Oswald',sans-serif;letter-spacing:.04em}
 
 /* ---- branded hero ---------------------------------------------------- */
-.hero{position:relative;overflow:hidden;background:
-   radial-gradient(120% 140% at 50% -30%,var(--forest2) 0%,var(--forest) 55%,#00203f 100%);
-   color:var(--cream);text-align:center;padding:38px 20px 30px;margin:0 -16px 0;
-   border-bottom-left-radius:26px;border-bottom-right-radius:26px}
-.hero .comb{position:absolute;inset:0;opacity:.10;pointer-events:none}
-.brand{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:10px}
-.brand .logo{display:block;height:64px;width:auto;max-width:90vw;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
-.brand .wordmark{font-family:'Oswald',sans-serif;font-weight:600;font-size:42px;letter-spacing:.10em;line-height:1;margin:0;color:var(--cream)}
+/* Flat cream field: the badge is navy-on-gold, so a navy hero swallowed it.
+   Light ground gives the mark its own contrast and reads cleaner besides. */
+.hero{position:relative;overflow:hidden;background:var(--cream);
+   color:var(--ink);text-align:center;padding:26px 20px 22px;margin:0 -16px 0;
+   border-bottom:1px solid var(--paper)}
+.brand{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px}
+.brand .logo{display:block;height:96px;width:auto;max-width:70vw}
+.brand .brandname{font-family:'Oswald',sans-serif;font-weight:600;font-size:34px;letter-spacing:.06em;
+   line-height:1;margin:2px 0 0;color:var(--forest);text-transform:none}
+.brand .brandname .alt{color:var(--gold)}
+.brand .wordmark{font-family:'Oswald',sans-serif;font-weight:600;font-size:42px;letter-spacing:.10em;line-height:1;margin:0;color:var(--forest)}
 .brand .wordmark .alt{color:var(--gold)}
-.brand .beemark{width:46px;height:46px;margin-bottom:2px}
-.poweredby{position:relative;margin:12px 0 0;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.20em;color:var(--gold);text-transform:uppercase}
-.poweredby a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(217,164,65,.4)}
-.hero .lede{position:relative;margin:14px auto 0;max-width:520px;color:#EAE3CC;font-size:15.5px}
+.poweredby{position:relative;margin:8px 0 0;font-family:'Oswald',sans-serif;font-size:11.5px;letter-spacing:.18em;color:#8A7A52;text-transform:uppercase}
+.poweredby a{color:var(--forest);text-decoration:none;border-bottom:1px solid rgba(0,51,102,.28)}
+.hero .lede{position:relative;margin:12px auto 0;max-width:520px;color:#5A5340;font-size:15.5px}
 .rule{height:5px;background:repeating-linear-gradient(90deg,var(--gold) 0 22px,var(--ember) 22px 30px,var(--cream) 30px 52px);border-radius:3px;margin:18px auto 0;max-width:240px;opacity:.9}
 
 /* ---- filter card ----------------------------------------------------- */
@@ -121,14 +123,15 @@ footer.site a{color:var(--forest2)}
 @media (max-width:560px){
   .card{grid-template-columns:1fr}
   .card .art svg{min-height:120px;max-height:140px}
-  .hero{padding:30px 16px 24px}
+  .hero{padding:20px 16px 18px}
   .brand .wordmark{font-size:34px}
-  .brand .logo{height:52px}
+  .brand .brandname{font-size:27px}
+  .brand .logo{height:72px}
   .townrow{flex-wrap:wrap}
   .nearbtn{flex-basis:100%;justify-content:center;padding:11px 14px}
 }
 @media print{
-  .hero .comb,.panel,.modes,.toolbar,.acts,footer.site .noprint,.surprisebar{display:none!important}
+  .panel,.modes,.toolbar,.acts,footer.site .noprint,.surprisebar{display:none!important}
   .hero{background:#fff;color:var(--forest);border-radius:0;padding:10px 0}
   .poweredby,.brand .wordmark .alt{color:var(--ember)}
   body{background:#fff}
@@ -138,33 +141,18 @@ footer.site a{color:var(--forest2)}
 </head>
 <body>
 <header class="hero">
-  <svg class="comb" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><pattern id="hx" width="42" height="48" patternUnits="userSpaceOnUse" patternTransform="translate(0,0)">
-      <path d="M21 2 39 13v22L21 46 3 35V13z" fill="none" stroke="#F5EFDC" stroke-width="2"/>
-      <path d="M0 26 18 37v22L0 70m42-44 18 11v22L42 70" fill="none" stroke="#F5EFDC" stroke-width="2"/>
-    </pattern></defs>
-    <rect width="400" height="200" fill="url(#hx)"/>
-  </svg>
   <div class="wrap" style="padding-bottom:0">
     <div class="brand">
-      <!-- Drop your logo at data/img/logo.svg (or .png). It auto-replaces the wordmark below. -->
-      <img class="logo" id="brandLogo" src="data/img/logo.svg" alt="BuzzCT — a Connecticut Buzz project" style="display:none"
-           onload="this.style.display='block';var w=document.getElementById('wordmark');if(w)w.style.display='none'"
-           onerror="this.remove()">
-      <div id="wordmark" style="display:flex;flex-direction:column;align-items:center">
-        <svg class="beemark" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <ellipse cx="21" cy="13" rx="11" ry="7" fill="#F5EFDC" opacity=".92"/>
-          <ellipse cx="41" cy="11" rx="11" ry="7" fill="#F5EFDC" opacity=".92"/>
-          <ellipse cx="31" cy="34" rx="18" ry="14" fill="#D9A441" stroke="#1E2A44" stroke-width="2.5"/>
-          <path d="M23 21v26M31 20v28M39 21v26" stroke="#1E2A44" stroke-width="4.5"/>
-          <circle cx="12" cy="30" r="7" fill="#1E2A44"/>
-          <path d="M49 34h6" stroke="#1E2A44" stroke-width="3" stroke-linecap="round"/>
-        </svg>
+      <img class="logo" id="brandLogo" src="data/img/logo.png"
+           alt="Connecticut Buzz" width="228" height="256"
+           onerror="this.remove();var w=document.getElementById('wordmark');if(w)w.style.display='flex'">
+      <div id="wordmark" style="display:none;flex-direction:column;align-items:center">
         <h1 class="wordmark">BUZZ<span class="alt">CT</span></h1>
       </div>
+      <p class="brandname">Buzz<span class="alt">CT</span></p>
     </div>
-    <p class="poweredby">Powered by <a href="https://connecticutbuzz.com" rel="noopener">Connecticut Buzz</a></p>
-    <p class="lede">4,000+ places. 1,000+ live events. One good day out — built around where you are and the time of day.</p>
+    <p class="poweredby">Powered by <a href="https://www.ctvisit.com" rel="noopener">CTvisit</a></p>
+    <p class="lede">15,000+ places. 900+ live events. One good day out — built around where you are and the time of day.</p>
     <div class="rule" role="presentation"></div>
   </div>
 </header>

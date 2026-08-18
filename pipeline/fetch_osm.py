@@ -30,7 +30,7 @@ area["ISO3166-2"="US-CT"][admin_level=4]->.ct;
   nwr["historic"]["historic"!~"^(boundary_stone|milestone)$"](area.ct);
   nwr["natural"~"^(beach|peak)$"](area.ct);
   nwr["amenity"~"^(restaurant|cafe|bar|pub|biergarten|ice_cream|fast_food|nightclub)$"](area.ct);
-  nwr["shop"~"^(bakery|mall|department_store|gift|books|antiques|art)$"](area.ct);
+  nwr["shop"~"^(bakery|mall|gift|books|antiques|art)$"](area.ct);
   nwr["craft"~"^(brewery|distillery|winery)$"](area.ct);
 );
 out center tags;
@@ -49,18 +49,47 @@ CHAIN_PAT = re.compile(
     r"quiznos|firehouse subs|jimmy john|smashburger|shake shack|checkers|hardee|"
     r"white castle|carl.s jr|del taco|bojangles|zaxby|culver|whataburger|in-n-out|"
     r"dairy queen|baskin|cold stone|auntie anne|cinnabon|krispy kreme|tim hortons|"
-    r"wawa|7-eleven|cumberland farms)\b", re.I)
+    r"wawa|7-eleven|cumberland farms|"
+    # Big-box and chain retail. Word boundaries matter here: bare "aldi" would
+    # swallow "Rinaldi's", and CT town names (Burlington, Windsor) must never
+    # appear in this list or real open space gets filtered out with them.
+    r"walmart|target|cvs pharmacy|walgreens|rite aid|home depot|lowe's|best buy|"
+    r"costco|sam's club|bj's wholesale|kohl's|macy's|t\.?j\.? ?maxx|marshalls|"
+    r"homegoods|big lots|jcpenney|nordstrom|boscov's|ocean state job lot|"
+    r"barnes & noble|dollar general|dollar tree|family dollar|five below|"
+    r"party city|petsmart|petco|gamestop|old navy|ulta beauty|sephora|"
+    r"bath & body works|dick's sporting|aldi|trader joe's|whole foods|"
+    r"stop & shop|shoprite|price chopper|big y)\b", re.I)
+
+
+def is_chain(tags):
+    """True for an outlet of a national chain.
+
+    OSM's own `brand` / `brand:wikidata` tags are the reliable signal — mappers
+    set them precisely to mark "this is a branch of X", which beats matching
+    names (a name list misses regional chains and trips over places like
+    "Staples Hill" or "Rinaldi's"). Lodging is exempt: a Hampton Inn is still a
+    legitimate answer to "where do we stay?", whereas a Walmart is never an
+    answer to "what should we do?".
+    """
+    if tags.get("tourism") in ("hotel", "motel", "guest_house", "hostel"):
+        return False
+    if tags.get("brand") or tags.get("brand:wikidata"):
+        return True
+    return bool(CHAIN_PAT.search(tags.get("name", "")))
 
 
 def is_noise(tags):
     """True for POIs that pad the count without being worth a trip."""
     notable = tags.get("wikidata") or tags.get("wikipedia")
     website = tags.get("website") or tags.get("contact:website")
+    # Chain check runs before the notability escape: a branded outlet is still a
+    # branded outlet even when the mapper attached an item to it.
+    if is_chain(tags):
+        return True
     if notable:
         return False
     if tags.get("amenity") == "fast_food":
-        return True
-    if CHAIN_PAT.search(tags.get("name", "")):
         return True
     # A named hill with no write-up and no site is a survey marker, not a hike.
     if tags.get("natural") == "peak" and not website:
@@ -95,7 +124,7 @@ def classify_osm(tags):
         base = "lodging"
     elif (leisure in ("park", "nature_reserve", "garden") or natural in ("beach", "peak")
           or tourism in ("attraction", "museum", "gallery", "artwork", "viewpoint", "zoo", "aquarium", "theme_park")
-          or historic or shop in ("mall", "department_store", "gift", "books", "antiques", "art")):
+          or historic or shop in ("mall", "gift", "books", "antiques", "art")):
         base = "attraction"
     else:
         return None
