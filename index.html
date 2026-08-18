@@ -118,6 +118,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn.locked{background:var(--forest);color:var(--cream)}
 a.srclink{color:var(--forest2);font-size:13px;align-self:center}
 .empty{background:#FBF7EA;border:1.5px dashed var(--ember);border-radius:14px;padding:18px;margin:14px 0;color:var(--ink60);font-size:14px}
+/* ---- forecast strip -------------------------------------------------- */
+.weather{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 2px}
+.weather .wday{display:flex;align-items:center;gap:7px;background:#EAF1F8;border:1.5px solid #BCD2E6;
+  border-radius:11px;padding:6px 11px;font-size:13px;color:var(--forest);white-space:nowrap}
+.weather .wday.wet{background:#E7E9EC;border-color:#C3C7CE;color:#4A5568}
+.weather .wday .ic{font-size:16px;line-height:1}
+.weather .wday .dn{font-family:'Oswald',sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.weather .wday .tp{font-weight:600}
+.weather .wday .tp i{font-style:normal;font-weight:400;opacity:.6}
+.weather .wday .pp{font-size:12px;opacity:.75}
+.weather .wlean{font-size:12.5px;color:var(--forest2);font-style:italic}
+@media (max-width:560px){.weather .wday{padding:5px 9px;gap:5px;font-size:12.5px}}
+
 .weatherbar{display:flex;align-items:center;gap:10px;background:#EAF1F8;border:1.5px solid #Bcd2e6;border:1.5px solid #BCD2E6;border-radius:13px;padding:12px 15px;margin:14px 0 2px;font-size:14px;color:var(--forest)}
 .weatherbar b{font-weight:600}
 .weatherbar .ic{font-size:20px;line-height:1}
@@ -244,6 +257,7 @@ footer.site a{color:var(--forest2)}
     <button class="btn" id="print" disabled>PRINT</button>
     <span class="note" id="poolnote"></span>
   </div>
+  <div class="weather" id="weatherWidget" hidden aria-label="Forecast for the days you're planning"></div>
   <div id="plan"></div>
 </section>
 
@@ -371,7 +385,19 @@ function seasonOf(d){const m=d.getMonth();return m<2||m===11?"winter":m<5?"sprin
 function fmtDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+(d.getHours()||d.getMinutes()?" · "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"")}
 /* weather bias: when rain is likely, down-weight (don't ban) outdoor picks */
 const WEATHER={active:false,rainy:false,label:"",day:"",prob:0};
-function weatherW(x){return (WEATHER.active&&WEATHER.rainy&&x.outdoor)?0.15:1}
+/* Outdoor picks are scaled by how pleasant that specific day is. `dayIdx` is
+   the 0-based offset into the planned window, so on a weekend the Saturday
+   slots are judged against Saturday's forecast and Sunday's against Sunday's —
+   which is what makes a wet Saturday push the hike to Sunday instead of
+   dampening both days equally. Indoor picks are never penalised. */
+function weatherW(x,dayIdx){
+  if(!WEATHER.active||!x.outdoor)return 1;
+  const ds=WEATHER.days||[];if(!ds.length)return 1;
+  const c=(dayIdx!=null&&ds[dayIdx])
+    ? ds[dayIdx].comfort
+    : ds.reduce((a,b)=>a+b.comfort,0)/ds.length;
+  return Math.max(0.1,c);
+}
 /* provenance bias -------------------------------------------------------
    OpenStreetMap contributes ~70% of the rows but almost none of the reasons
    to drive somewhere: most are a name and a pin. Left unweighted, a random
@@ -388,21 +414,21 @@ function sourceW(x){
     default: return 0.5;
   }
 }
-function baseW(x,weighted){return (weighted?sourceW(x):1)*weatherW(x)}
-function pick(arr,weighted){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=baseW(x,true);tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
+function baseW(x,weighted,dayIdx){return (weighted?sourceW(x):1)*weatherW(x,dayIdx)}
+function pick(arr,weighted,dayIdx){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=baseW(x,true,dayIdx);tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
 /* Route-aware pick: keeps the weighted-random variety of pick() but biases
    toward stops that make a short, forward leg from the previous stop, so the
    day flows in one direction instead of doubling back. `prev` is the last
    placed stop; `prevPt` is the stop before that (or the origin) used to read
    the current heading. */
-function pickRouted(arr,prev,prevPt,pools,weighted){
+function pickRouted(arr,prev,prevPt,pools,weighted,dayIdx){
   if(!arr.length)return null;
-  if(!prev||!prev.lat)return pick(arr,weighted);
+  if(!prev||!prev.lat)return pick(arr,weighted,dayIdx);
   const ref=(prevPt&&prevPt.lat)?prevPt:{lat:pools.olat,lng:pools.olng};
   let hx=prev.lng-ref.lng,hy=prev.lat-ref.lat;const hm=Math.hypot(hx,hy);
   const haveHead=hm>1e-9;if(haveHead){hx/=hm;hy/=hm}
   let tot=0;const ws=arr.map(c=>{
-    let w=baseW(c,weighted);
+    let w=baseW(c,weighted,dayIdx);
     if(c.lat){
       const d=hav(prev.lat,prev.lng,c.lat,c.lng);
       w*=1/Math.pow(1+d/8,1.4);            /* favor short hops (~8mi scale) */
@@ -476,32 +502,83 @@ function basePools(){
    On any failure we silently disable weather logic and plan as normal. */
 const WMO_WET=c=>(c>=51&&c<=67)||(c>=71&&c<=86)||(c>=95);
 const weatherCache={};
+/* WMO weather_code → a short label and a glyph. Grouped, not exhaustive:
+   the planner only needs to know "can we be outside?". */
+function wmoLook(code,prob){
+  if(code>=95)return{ic:"⛈",txt:"Storms"};
+  if(code>=71&&code<=86)return{ic:"❄",txt:"Snow"};
+  if(code>=51&&code<=67)return{ic:"🌧",txt:code<=57?"Drizzle":"Rain"};
+  if(code>=45&&code<=48)return{ic:"🌫",txt:"Fog"};
+  if(code===3)return{ic:"☁",txt:"Overcast"};
+  if(code===1||code===2)return{ic:"⛅",txt:"Partly sunny"};
+  return prob>=40?{ic:"🌤",txt:"Mostly clear"}:{ic:"☀",txt:"Clear"};
+}
+/* How good is this day for being outdoors, 0..1. Rain dominates; temperature
+   trims the edges, because 38° and 96° both keep people indoors even under a
+   blue sky. Used as a multiplier, never as a filter — see weatherW. */
+function comfortOf(prob,code,tmax){
+  let c=1;
+  if(WMO_WET(code)||prob>=55)c=0.15;
+  else if(prob>=35)c=0.5;
+  else if(prob>=20)c=0.8;
+  if(typeof tmax==="number"){
+    if(tmax<32||tmax>95)c*=0.35;
+    else if(tmax<42||tmax>88)c*=0.65;
+  }
+  return c;
+}
 async function ensureWeather(){
   const when=$("#when").value;
-  if(when!=="today"&&when!=="weekend"){WEATHER.active=false;WEATHER.rainy=false;return}
-  WEATHER.active=true;
+  WEATHER.days=[];
+  /* Open-Meteo gives 10 days; a 30-day window is past any real forecast, so
+     we show nothing rather than something invented. */
+  if(when==="month"){WEATHER.active=false;WEATHER.rainy=false;paintWeather();return}
   const [olat,olng]=origin(),win=dateWindow();
   const iso=d=>new Date(+d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
   const days=[];for(let t=+win.start;t<+win.end;t+=864e5)days.push(iso(new Date(t)));
   const key=olat.toFixed(2)+","+olng.toFixed(2)+":"+days.join("|");
-  if(weatherCache[key]){Object.assign(WEATHER,weatherCache[key]);return}
+  if(weatherCache[key]){Object.assign(WEATHER,weatherCache[key]);paintWeather();return}
   try{
-    const u=`https://api.open-meteo.com/v1/forecast?latitude=${olat}&longitude=${olng}&daily=precipitation_probability_max,weather_code&timezone=America%2FNew_York&forecast_days=10`;
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${olat}&longitude=${olng}`
+      +`&daily=precipitation_probability_max,weather_code,temperature_2m_max,temperature_2m_min`
+      +`&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=10`;
     const r=await fetch(u);if(!r.ok)throw 0;
     const j=await r.json(),D=j.daily||{};
-    let worst={rainy:false,prob:0,day:"",label:""};
+    const out=[];let worst={rainy:false,prob:0,day:"",label:""};
     (D.time||[]).forEach((dt,i)=>{
       if(!days.includes(dt))return;
       const prob=D.precipitation_probability_max?.[i]??0, code=D.weather_code?.[i]??0;
+      const tmax=D.temperature_2m_max?.[i], tmin=D.temperature_2m_min?.[i];
+      const nm=new Date(dt+"T12:00").toLocaleDateString("en-US",{weekday:"short"});
+      const look=wmoLook(code,prob);
+      out.push({date:dt,name:nm,prob,code,tmax,tmin,comfort:comfortOf(prob,code,tmax),...look});
       const rainy=prob>=55||WMO_WET(code);
       if(rainy&&prob>=worst.prob){
-        const nm=new Date(dt+"T12:00").toLocaleDateString("en-US",{weekday:"long"});
-        worst={rainy:true,prob,day:nm,label:`${nm}: ${prob}% chance of rain`};
+        const long=new Date(dt+"T12:00").toLocaleDateString("en-US",{weekday:"long"});
+        worst={rainy:true,prob,day:long,label:`${long}: ${prob}% chance of rain`};
       }
     });
-    const res={active:true,rainy:worst.rainy,prob:worst.prob,day:worst.day,label:worst.label};
+    const res={active:out.length>0,rainy:worst.rainy,prob:worst.prob,day:worst.day,label:worst.label,days:out};
     weatherCache[key]=res;Object.assign(WEATHER,res);
-  }catch(e){WEATHER.active=false;WEATHER.rainy=false} /* offline / blocked → no weather logic */
+  }catch(e){WEATHER.active=false;WEATHER.rainy=false;WEATHER.days=[]} /* offline / blocked → no weather logic */
+  paintWeather();
+}
+/* The forecast strip under BUILD MY ADVENTURE. Shows the days actually being
+   planned for, so changing "when" or the town visibly changes the answer. */
+function paintWeather(){
+  const el=$("#weatherWidget");if(!el)return;
+  const ds=(WEATHER.active&&WEATHER.days)||[];
+  if(!ds.length){el.hidden=true;el.innerHTML="";return}
+  el.hidden=false;
+  const show=ds.slice(0,7);
+  const lean=ds.every(d=>d.comfort<=0.5)?"Leaning indoors"
+    :(ds.some(d=>d.comfort<=0.5)?"Outdoor picks favour the drier day":"Good day to be outside");
+  el.innerHTML=show.map(d=>`<span class="wday${d.comfort<=0.5?" wet":""}">
+      <span class="ic">${d.ic}</span>
+      <span class="dn">${esc(d.name)}</span>
+      <span class="tp">${d.tmax!=null?Math.round(d.tmax)+"°":""}${d.tmin!=null?"<i>/"+Math.round(d.tmin)+"°</i>":""}</span>
+      <span class="pp">${d.prob}%</span>
+    </span>`).join("")+`<span class="wlean">${esc(lean)}</span>`;
 }
 
 /* ====================== itinerary engine ====================== */
@@ -511,6 +588,13 @@ const DAY_SLOTS=[
   {id:"afternoon",label:"AFTERNOON",want:["attraction","hike","event"],tod:"afternoon",near:18},
   {id:"evening",label:"DINNER & EVENING",want:["food","drink","event"],tod:"evening",near:18}
 ];
+/* Slot keys are "d1-morning" / "d2-evening" / "stay". Map that to a 0-based
+   offset into the forecast window so each day's picks get judged against that
+   day's weather. Overnight lodging is indoor by definition — no day needed. */
+function dayIndexOf(slot){
+  const m=/^d(\d+)-/.exec(slot&&slot.key||"");
+  return m?(+m[1]-1):null;
+}
 function slotsFor(mode){
   if(mode==="day")return DAY_SLOTS.map(s=>({...s,key:"d1-"+s.id,day:"YOUR DAY"}));
   const mk=d=>DAY_SLOTS.map(s=>({...s,key:`d${d}-`+s.id,day:d===1?"SATURDAY":"SUNDAY"}));
@@ -552,7 +636,8 @@ function buildPlan(keepLocked){
     const cands=candidates(slot,pools,slot.anchor?null:prev,used);
     const preferred=cands.filter(audiencePrefer);
     const pool=preferred.length>=3?preferred:cands;
-    const chosen=slot.anchor?pick(pool,true):pickRouted(pool,prev,prevPt,pools,true);
+    const di=dayIndexOf(slot);
+    const chosen=slot.anchor?pick(pool,true,di):pickRouted(pool,prev,prevPt,pools,true,di);
     if(chosen){state.slots[slot.key]=chosen.id;used.add(chosen.id);if(chosen.lat){prevPt=prev;prev=chosen}}
   }
   renderPlan(pools)
@@ -602,9 +687,27 @@ function cardHTML(x,slot,pools,withActs,legTxt){
     </div>`:`<div class="acts"><a class="srclink" href="${maps}" rel="noopener" target="_blank">Directions</a>${info}</div>`}
   </div></article>`
 }
+/* "Why this" — at most two reasons, and only ones that are actually true of
+   this pick in this context. A card that explains itself reads as reasoning;
+   an unexplained one reads as a shuffle. Silent when there's nothing honest
+   to say, which is better than padding every card with filler. */
+function whyFor(x,slot){
+  const out=[];
+  if(x.curated)out.push("a bucket-list pick");
+  const day=WEATHER.active&&(WEATHER.days||[])[dayIndexOf(slot)];
+  if(day){
+    if(!x.outdoor&&day.comfort<=0.5)out.push(`indoors — ${day.prob}% rain ${day.name}`);
+    else if(x.outdoor&&day.comfort>=0.8)out.push(`${day.ic} worth being outside ${day.name}`);
+  }
+  if(out.length<2&&x.cost==="free")out.push("free");
+  if(out.length<2&&state.who==="family"&&x.audience&&x.audience.family)out.push("good with kids");
+  if(out.length<2&&state.who==="adults"&&x.audience&&x.audience.adults21)out.push("21+");
+  return out.slice(0,2).join(" · ");
+}
 function weatherBannerHTML(){
-  if(!WEATHER.active||!WEATHER.rainy)return"";
-  return`<div class="weatherbar"><span class="ic">☔</span><span><b>${esc(WEATHER.label)}.</b> Leaning toward indoor picks — shuffle any card to override.</span></div>`;
+  /* superseded by the forecast strip under the toolbar, which shows every
+     planned day rather than only the wettest one. */
+  return"";
 }
 function renderPlan(pools){
   const slots=slotsFor(state.mode);let html=weatherBannerHTML(),day=null,filled=0;
@@ -647,7 +750,8 @@ function shuffleSlot(key){
     const x=byId[state.slots[s.key]];if(x&&x.lat){prevPt=prev;prev=x}
   }
   const cands=candidates(slot,pools,slot.anchor?null:prev,used);
-  const chosen=slot.anchor?pick(cands,true):pickRouted(cands,prev,prevPt,pools,true);
+  const di=dayIndexOf(slot);
+  const chosen=slot.anchor?pick(cands,true,di):pickRouted(cands,prev,prevPt,pools,true,di);
   if(chosen){state.slots[key]=chosen.id;renderPlan(pools)}
   else{delete state.slots[key];renderPlan(pools)}
 }
@@ -813,6 +917,9 @@ function setTown(name){
   const inp=$("#townSearch");inp.value=name;
   $("#townAC").classList.add("has-val");
   closeTownList();
+  /* forecast is origin-specific — Salisbury and Mystic are 90 miles apart */
+  if(typeof ensureWeather==="function")ensureWeather();
+  if($("#filterSummary")&&!$("#filterSummary").hidden)paintSummary();
   return true;
 }
 function closeTownList(){const l=$("#townList");l.classList.remove("open");l.innerHTML="";$("#townSearch").setAttribute("aria-expanded","false");acIndex=-1}
@@ -895,7 +1002,8 @@ function initTownPicker(){
   };
   $("#draw").onclick=async()=>{const b=$("#draw"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";await ensureWeather();b.textContent=t;b.disabled=false;drawCard();setFiltersCollapsed(true)};
   $("#revealNow").onclick=reveal;
-  $("#when").addEventListener("change",updateWhenNote);
+  $("#when").addEventListener("change",()=>{updateWhenNote();ensureWeather()});
+  $("#drive").addEventListener("change",()=>{if(!$("#filterSummary").hidden)paintSummary()});
   updateWhenNote();
   const ageDays=(Date.now()-new Date(window.CT_PLACES.generated))/864e5;
   $("#datastamp").textContent=`Data refreshed ${new Date(window.CT_PLACES.generated).toLocaleDateString()} · ${PLACES.length.toLocaleString()} places · ${EVENTS.length.toLocaleString()} events`;
@@ -906,6 +1014,7 @@ function initTownPicker(){
     document.querySelector("footer.site").prepend(w);
   }
   restoreState();
+  ensureWeather();
 })();
 </script>
 </body>
