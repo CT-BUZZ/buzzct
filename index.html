@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BuzzCT — plan your Connecticut adventure</title>
-<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT builds your Connecticut day trip or weekend, or the bee reveals a surprise adventure. 15,000+ places and 900+ live events.">
+<meta name="description" content="Pick your town, drive time, dates, crew, and budget — BuzzCT plans an adventure so you discover more of the Connecticut around you. 14,000+ places and 900+ live events, refreshed nightly.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -17,6 +17,10 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 3',system-ui,sans-serif;font-size:16px;line-height:1.55}
+/* The UA rule for [hidden] is display:none, which ANY author `display`
+   declaration outranks — so .summary{display:flex} silently defeated its own
+   hidden attribute. Restate it with weight so hidden always means hidden. */
+[hidden]{display:none!important}
 .wrap{max-width:820px;margin:0 auto;padding:0 16px 64px}
 .disp{font-family:'Oswald',sans-serif;letter-spacing:.04em}
 
@@ -181,7 +185,7 @@ footer.site a{color:var(--forest2)}
       <h1 class="brandname">Buzz<span class="alt">CT</span></h1>
     </div>
     <p class="poweredby">Powered by <a href="https://www.ctvisit.com" rel="noopener">CTvisit</a></p>
-    <p class="lede">15,000+ places. 900+ live events. One good day out — built around where you are and the time of day.</p>
+    <p class="lede" id="lede">Plan an adventure and discover more of the Connecticut around you.</p>
     <div class="rule" role="presentation"></div>
   </div>
 </header>
@@ -1008,6 +1012,16 @@ function initTownPicker(){
   $("#when").addEventListener("change",()=>{updateWhenNote();ensureWeather()});
   $("#drive").addEventListener("change",()=>{if(!$("#filterSummary").hidden)paintSummary()});
   updateWhenNote();
+  /* Counts come from the data, not hardcoded copy — the nightly refresh moves
+     them, and a headline that quietly drifts out of date is worse than none.
+     Rounded down so the claim is always true. */
+  {
+    const floorTo=(n,step)=>Math.floor(n/step)*step;
+    const p=floorTo(PLACES.length,500).toLocaleString();
+    const e=floorTo(EVENTS.length,50).toLocaleString();
+    $("#lede").textContent=`${p}+ places. ${e}+ live events. Plan an adventure and `
+      +`discover more of the Connecticut around you.`;
+  }
   const ageDays=(Date.now()-new Date(window.CT_PLACES.generated))/864e5;
   $("#datastamp").textContent=`Data refreshed ${new Date(window.CT_PLACES.generated).toLocaleDateString()} · ${PLACES.length.toLocaleString()} places · ${EVENTS.length.toLocaleString()} events`;
   if(ageDays>14){
