@@ -38,6 +38,20 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 
 .hero .lede{position:relative;margin:12px auto 0;max-width:520px;color:#5A5340;font-size:15.5px}
 .rule{height:5px;background:repeating-linear-gradient(90deg,var(--gold) 0 22px,var(--ember) 22px 30px,var(--cream) 30px 52px);border-radius:3px;margin:18px auto 0;max-width:240px;opacity:.9}
 
+/* ---- collapsed filter summary ---------------------------------------
+   Once a plan exists the filters have done their job, so they fold into a
+   single tappable row and hand the space to the results. */
+.summary{display:flex;width:100%;align-items:center;gap:10px;justify-content:space-between;
+  background:#FCFAF1;border:1.5px solid var(--paper);border-radius:14px;padding:10px 14px;margin:22px 0;
+  box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.summary:hover{border-color:var(--forest2)}
+.summary .pills{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.summary .pill{font-family:'Oswald',sans-serif;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--forest);background:rgba(0,51,102,.09);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.summary .edit{display:flex;align-items:center;gap:3px;flex:none;font-family:'Oswald',sans-serif;
+  font-size:11.5px;letter-spacing:.12em;color:var(--forest2)}
+.summary .edit svg{width:14px;height:14px}
+
 /* ---- filter card ----------------------------------------------------- */
 .panel{background:#FCFAF1;border:1.5px solid var(--paper);border-radius:18px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
 .frow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
@@ -71,7 +85,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .chip{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;border:1.5px solid #cdd7cf;border-radius:999px;background:#fff;color:var(--forest);padding:8px 16px;cursor:pointer;transition:.15s}
 .chip:hover{border-color:var(--forest)}
 .chip[aria-pressed=true]{background:var(--forest);color:var(--cream);border-color:var(--forest)}
-.modes{display:flex;gap:8px;margin:22px 0 0;background:var(--paper);padding:5px;border-radius:13px}
+.modes{display:flex;gap:8px;margin:14px 0 0;background:var(--paper);padding:5px;border-radius:13px}
 .mode{flex:1;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.08em;padding:12px 6px;border-radius:9px;border:none;background:transparent;color:var(--forest);cursor:pointer;transition:.15s}
 .mode:hover{background:rgba(255,255,255,.55)}
 .mode[aria-pressed=true]{background:var(--ember);color:var(--cream);box-shadow:var(--shadow-sm)}
@@ -158,7 +172,12 @@ footer.site a{color:var(--forest2)}
 </header>
 
 <div class="wrap">
-<section class="panel" aria-label="Filters">
+<button type="button" class="summary" id="filterSummary" hidden aria-expanded="false" aria-controls="filterPanel">
+  <span class="pills" id="summaryPills"></span>
+  <span class="edit">EDIT<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+</button>
+
+<section class="panel" id="filterPanel" aria-label="Filters">
   <div class="frow">
     <div class="field wide"><label for="townSearch">STARTING FROM</label>
       <div class="townrow">
@@ -207,12 +226,15 @@ footer.site a{color:var(--forest2)}
       </div></div>
   </div>
   <p class="note" id="whennote" style="margin:4px 0 0"></p>
-  <div class="modes" role="group" aria-label="Mode">
-    <button class="mode" data-m="day" aria-pressed="true">PLAN MY DAY</button>
-    <button class="mode" data-m="weekend" aria-pressed="false">PLAN A WEEKEND</button>
-    <button class="mode" data-m="surprise" aria-pressed="false">SURPRISE ME</button>
-  </div>
 </section>
+
+<!-- Mode lives outside the filter card: it's an action, not a filter, and it
+     has to stay reachable once the filters collapse behind the summary row. -->
+<div class="modes" role="group" aria-label="Mode">
+  <button class="mode" data-m="day" aria-pressed="true">PLAN MY DAY</button>
+  <button class="mode" data-m="weekend" aria-pressed="false">PLAN A WEEKEND</button>
+  <button class="mode" data-m="surprise" aria-pressed="false">SURPRISE ME</button>
+</div>
 
 <section id="planner">
   <div class="toolbar">
@@ -741,6 +763,8 @@ function restoreState(){
     setChips("#who",f.who);state.who=f.who;setChips("#cost",f.c);state.cost=f.c;
     setMode(f.m);state.slots=f.s||{};state.locked=new Set(f.l||[]);
     if(f.m!=="surprise"){renderPlan(basePools())}
+    /* someone opened a shared plan — show them the plan, not the form */
+    setFiltersCollapsed(true);
     return true
   }catch(e){return false}
 }
@@ -755,6 +779,28 @@ function setMode(m){
   state.mode=m;
   document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
   $("#planner").hidden=m==="surprise";$("#surprise").hidden=m!=="surprise";
+}
+
+/* ---- filter collapse -------------------------------------------------
+   The panel is five rows tall; on a phone it pushes the first result card
+   entirely off screen. After a plan is built we swap it for a summary row
+   showing what was asked for, which stays reversible in one tap. */
+const WHO_LABEL={any:"Everyone",family:"Family w/ kids",adults:"21+ crew"};
+function summaryText(){
+  const sel=id=>{const e=$(id);return e.options[e.selectedIndex].textContent.trim()};
+  const out=[$("#town").value||"Connecticut",sel("#drive"),sel("#when"),WHO_LABEL[state.who]||"Everyone"];
+  if(state.cost==="free")out.push("Free only");
+  return out;
+}
+function paintSummary(){
+  $("#summaryPills").innerHTML=summaryText().map(t=>`<span class="pill">${esc(t)}</span>`).join("");
+}
+function setFiltersCollapsed(on){
+  const s=$("#filterSummary");
+  $("#filterPanel").hidden=on;
+  s.hidden=!on;
+  s.setAttribute("aria-expanded",String(!on));
+  if(on)paintSummary();
 }
 
 /* ====================== town picker (search + near me) ====================== */
@@ -834,7 +880,12 @@ function initTownPicker(){
   document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
   $("#build").onclick=async()=>{
     state.locked.clear();const b=$("#build"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";
-    await ensureWeather();b.textContent=t;b.disabled=false;buildPlan(false)};
+    await ensureWeather();b.textContent=t;b.disabled=false;buildPlan(false);setFiltersCollapsed(true)};
+  $("#filterSummary").onclick=()=>{
+    setFiltersCollapsed(false);
+    const p=$("#filterPanel");
+    if(p.scrollIntoView)p.scrollIntoView({behavior:"smooth",block:"nearest"});
+  };
   $("#shuffleAll").onclick=()=>buildPlan(true);
   $("#print").onclick=()=>window.print();
   $("#share").onclick=async()=>{
@@ -842,7 +893,7 @@ function initTownPicker(){
     try{await navigator.clipboard.writeText(url);$("#share").textContent="COPIED!";setTimeout(()=>$("#share").textContent="COPY SHARE LINK",1500)}
     catch(e){prompt("Copy this link:",url)}
   };
-  $("#draw").onclick=async()=>{const b=$("#draw"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";await ensureWeather();b.textContent=t;b.disabled=false;drawCard()};
+  $("#draw").onclick=async()=>{const b=$("#draw"),t=b.textContent;b.disabled=true;b.textContent="CHECKING SKIES…";await ensureWeather();b.textContent=t;b.disabled=false;drawCard();setFiltersCollapsed(true)};
   $("#revealNow").onclick=reveal;
   $("#when").addEventListener("change",updateWhenNote);
   updateWhenNote();
