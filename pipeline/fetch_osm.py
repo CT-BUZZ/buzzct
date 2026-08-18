@@ -79,8 +79,43 @@ def is_chain(tags):
     return bool(CHAIN_PAT.search(tags.get("name", "")))
 
 
+_WORSHIP_BUILDINGS = {"church", "chapel", "cathedral", "synagogue", "mosque", "temple"}
+
+
+def is_closed_to_dropins(tags):
+    """Places you can't just wander into: active houses of worship, members-only
+    clubs, and anything explicitly tagged private.
+
+    Congregations and country clubs are real places, but nobody answers "what
+    should we do Saturday?" with a stranger's parish or a club they don't belong
+    to. Historic sites happen to include some deconsecrated churches — those
+    arrive through CTvisit's heritage listings, not here, so filtering the OSM
+    side doesn't cost us the landmarks.
+    """
+    if tags.get("access") in ("private", "no", "members"):
+        return True
+    if (tags.get("amenity") == "place_of_worship" or tags.get("religion")
+            or tags.get("denomination")
+            or tags.get("building") in _WORSHIP_BUILDINGS
+            or tags.get("historic") in ("church", "chapel", "monastery", "wayside_shrine")):
+        return True
+    if tags.get("club") or tags.get("sport") == "golf" or tags.get("leisure") == "golf_course":
+        return True
+    # Name backstop for clubs OSM never tagged as such. "mini golf" is excluded
+    # on purpose — a mini golf course is exactly the kind of place you drop in on.
+    name = tags.get("name", "")
+    if re.search(r"\bmini(ature)? golf\b", name, re.I):
+        return False
+    return bool(re.search(
+        r"\b(country club|golf club|golf course|golf links|yacht club|racquet club|"
+        r"tennis club|swim club|hunt club|rod (&|and) gun|gun club|curling club)\b",
+        name, re.I))
+
+
 def is_noise(tags):
     """True for POIs that pad the count without being worth a trip."""
+    if is_closed_to_dropins(tags):
+        return True
     notable = tags.get("wikidata") or tags.get("wikipedia")
     website = tags.get("website") or tags.get("contact:website")
     # Chain check runs before the notability escape: a branded outlet is still a

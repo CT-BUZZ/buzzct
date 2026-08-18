@@ -347,6 +347,30 @@ def sanity_ok(path, new_count, sources=None):
     return old == 0 or new_count >= old * SANITY_FLOOR
 
 
+# Members-only and tee-time venues. CTvisit's own "Golfing" subcategory is the
+# precise signal for courses; the name pattern catches the racquet/yacht/country
+# clubs it files under plain "Sports". Deliberately narrow — "American Legion
+# State Forest" is a state forest, so `american legion` is not in this list.
+CLUB_PAT = re.compile(
+    r"\b(country club|golf club|golf course|golf links|yacht club|racquet club|"
+    r"tennis club|swim club|hunt club|rod (&|and) gun|gun club|athletic club|"
+    r"curling club|polo club)\b", re.I)
+
+
+def is_members_only(place):
+    """True for CTvisit listings you can't spontaneously drop in on.
+
+    Note this deliberately does NOT filter houses of worship. Every religious
+    listing CTvisit carries is tagged History/Heritage and Monuments & Landmarks
+    — they are landmark sites with guided tours (the New Haven Crypt, First
+    Church on the Green), not active parishes. The OSM side filters actual
+    congregations by tag; see fetch_osm.is_closed_to_dropins.
+    """
+    if "Golfing" in (place.get("tags") or []):
+        return True
+    return bool(CLUB_PAT.search(place.get("name", "")))
+
+
 def sanity_ok_events(path, new_count, today):
     """Events version of the gate: compare against the previous file's events
     that are *still upcoming*. Comparing against its raw total would misread the
@@ -373,6 +397,12 @@ def main():
 
     places = [norm_listing(r, linc) for r in lrecs]
     places = [p for p in places if p and p["name"]]
+    clubs = [p for p in places if is_members_only(p)]
+    if clubs:
+        print(f"Dropped {len(clubs)} members-only venues (golf, racquet, yacht clubs): "
+              + ", ".join(p["name"] for p in clubs[:4])
+              + (" …" if len(clubs) > 4 else ""))
+        places = [p for p in places if not is_members_only(p)]
     # A listing with no coordinates can't answer "what's near me" or land on the
     # map, so it would be dead weight in every view. Upstream leaves a handful
     # ungeocoded each pull; drop them rather than ship unreachable cards.
