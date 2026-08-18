@@ -129,6 +129,8 @@ a.srclink{color:var(--forest2);font-size:13px;align-self:center}
 .weather .wday{display:flex;align-items:center;gap:7px;background:#EAF1F8;border:1.5px solid #BCD2E6;
   border-radius:11px;padding:6px 11px;font-size:13px;color:var(--forest);white-space:nowrap}
 .weather .wday.wet{background:#E7E9EC;border-color:#C3C7CE;color:#4A5568}
+.weather .wday.wnow{background:var(--forest);border-color:var(--forest);color:var(--cream)}
+.weather .wday.wnow .pp{opacity:.85}
 .weather .wday .ic{font-size:16px;line-height:1}
 .weather .wday .dn{font-family:'Oswald',sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
 .weather .wday .tp{font-weight:600}
@@ -535,21 +537,28 @@ function comfortOf(prob,code,tmax){
 }
 async function ensureWeather(){
   const when=$("#when").value;
-  WEATHER.days=[];
-  /* Open-Meteo gives 10 days; a 30-day window is past any real forecast, so
-     we show nothing rather than something invented. */
-  if(when==="month"){WEATHER.active=false;WEATHER.rainy=false;paintWeather();return}
+  WEATHER.days=[];WEATHER.now=null;
   const [olat,olng]=origin(),win=dateWindow();
   const iso=d=>new Date(+d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
   const days=[];for(let t=+win.start;t<+win.end;t+=864e5)days.push(iso(new Date(t)));
-  const key=olat.toFixed(2)+","+olng.toFixed(2)+":"+days.join("|");
+  /* Conditions right now go stale; bucket the cache key by 10 minutes so the
+     "NOW" chip refreshes on its own without hammering the API. */
+  const bucket=Math.floor(Date.now()/6e5);
+  const key=olat.toFixed(2)+","+olng.toFixed(2)+":"+when+":"+bucket;
   if(weatherCache[key]){Object.assign(WEATHER,weatherCache[key]);paintWeather();return}
   try{
     const u=`https://api.open-meteo.com/v1/forecast?latitude=${olat}&longitude=${olng}`
+      +`&current=temperature_2m,weather_code,precipitation,is_day`
       +`&daily=precipitation_probability_max,weather_code,temperature_2m_max,temperature_2m_min`
       +`&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=10`;
     const r=await fetch(u);if(!r.ok)throw 0;
-    const j=await r.json(),D=j.daily||{};
+    const j=await r.json(),D=j.daily||{},C=j.current||{};
+    /* Right now, at the origin — what "Plan my day" actually needs to know. */
+    const nowLook=wmoLook(C.weather_code??0,0);
+    const now=(C.temperature_2m!=null)
+      ? {temp:C.temperature_2m,code:C.weather_code??0,...nowLook,
+         label:$("#town").value||"Connecticut"}
+      : null;
     const out=[];let worst={rainy:false,prob:0,day:"",label:""};
     (D.time||[]).forEach((dt,i)=>{
       if(!days.includes(dt))return;
@@ -564,9 +573,13 @@ async function ensureWeather(){
         worst={rainy:true,prob,day:long,label:`${long}: ${prob}% chance of rain`};
       }
     });
-    const res={active:out.length>0,rainy:worst.rainy,prob:worst.prob,day:worst.day,label:worst.label,days:out};
+    /* A 30-day window is past any real forecast, so we carry no daily entries
+       for it — but conditions right now are still true and still useful. */
+    const useDays=(when==="month")?[]:out;
+    const res={active:useDays.length>0||!!now,rainy:worst.rainy,prob:worst.prob,
+               day:worst.day,label:worst.label,days:useDays,now};
     weatherCache[key]=res;Object.assign(WEATHER,res);
-  }catch(e){WEATHER.active=false;WEATHER.rainy=false;WEATHER.days=[]} /* offline / blocked → no weather logic */
+  }catch(e){WEATHER.active=false;WEATHER.rainy=false;WEATHER.days=[];WEATHER.now=null} /* offline / blocked → no weather logic */
   paintWeather();
 }
 /* The forecast strip under BUILD MY ADVENTURE. Shows the days actually being
@@ -574,17 +587,35 @@ async function ensureWeather(){
 function paintWeather(){
   const el=$("#weatherWidget");if(!el)return;
   const ds=(WEATHER.active&&WEATHER.days)||[];
-  if(!ds.length){el.hidden=true;el.innerHTML="";return}
+  const now=WEATHER.active?WEATHER.now:null;
+  /* "Plan my day" is a right-now decision, so it leads with conditions right
+     now at the origin. Multi-day modes lead with the daily forecast, and still
+     show NOW when today is one of the days being planned. */
+  const isToday=d=>{const t=new Date();return d.date===new Date(+t-t.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+  const wantNow=!!now&&(state.mode==="day"||!ds.length||ds.some(isToday));
+  if(!ds.length&&!wantNow){el.hidden=true;el.innerHTML="";return}
   el.hidden=false;
-  const show=ds.slice(0,7);
-  const lean=ds.every(d=>d.comfort<=0.5)?"Leaning indoors"
-    :(ds.some(d=>d.comfort<=0.5)?"Outdoor picks favour the drier day":"Good day to be outside");
-  el.innerHTML=show.map(d=>`<span class="wday${d.comfort<=0.5?" wet":""}">
+  const nowChip=wantNow?`<span class="wday wnow">
+      <span class="ic">${now.ic}</span>
+      <span class="dn">Now</span>
+      <span class="tp">${Math.round(now.temp)}°</span>
+      <span class="pp">${esc(now.txt)} · ${esc(now.label)}</span>
+    </span>`:"";
+  /* In day mode the forecast beyond today is noise — one day is being planned.
+     But if today isn't in the chosen window (day mode with a weekend selected),
+     fall back to the window's days: those are the ones actually in play, and
+     the lean line below must describe the same days the chips show. */
+  const todayOnly=state.mode==="day"?ds.filter(isToday):ds;
+  const show=(todayOnly.length?todayOnly:ds).slice(0,7);
+  const lean=!show.length?""
+    :show.every(d=>d.comfort<=0.5)?"Leaning indoors"
+    :(show.some(d=>d.comfort<=0.5)?"Outdoor picks favour the drier day":"Good day to be outside");
+  el.innerHTML=nowChip+show.map(d=>`<span class="wday${d.comfort<=0.5?" wet":""}">
       <span class="ic">${d.ic}</span>
       <span class="dn">${esc(d.name)}</span>
       <span class="tp">${d.tmax!=null?Math.round(d.tmax)+"°":""}${d.tmin!=null?"<i>/"+Math.round(d.tmin)+"°</i>":""}</span>
       <span class="pp">${d.prob}%</span>
-    </span>`).join("")+`<span class="wlean">${esc(lean)}</span>`;
+    </span>`).join("")+(lean?`<span class="wlean">${esc(lean)}</span>`:"");
 }
 
 /* ====================== itinerary engine ====================== */
@@ -890,6 +921,7 @@ function setMode(m){
   state.mode=m;
   document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
   $("#planner").hidden=m==="surprise";$("#surprise").hidden=m!=="surprise";
+  if(typeof paintWeather==="function")paintWeather();
 }
 
 /* ---- filter collapse -------------------------------------------------
