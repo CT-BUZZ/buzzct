@@ -350,7 +350,24 @@ function fmtDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDa
 /* weather bias: when rain is likely, down-weight (don't ban) outdoor picks */
 const WEATHER={active:false,rainy:false,label:"",day:"",prob:0};
 function weatherW(x){return (WEATHER.active&&WEATHER.rainy&&x.outdoor)?0.15:1}
-function pick(arr,weighted){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=(x.curated?(x.weight||3):1)*weatherW(x);tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
+/* provenance bias -------------------------------------------------------
+   OpenStreetMap contributes ~70% of the rows but almost none of the reasons
+   to drive somewhere: most are a name and a pin. Left unweighted, a random
+   draw is overwhelmingly a nameless hill. Rank by how much the record can
+   actually tell you: hand-picked > state tourism listing > Wikidata landmark
+   > an OSM entry that at least has a write-up or a website > a bare pin.
+   Nothing is excluded — the long tail stays reachable, just rare. */
+function sourceW(x){
+  if(x.curated)return x.weight||6;
+  switch(x.source){
+    case "ctvisit": return 1;
+    case "wikidata": return 0.5;
+    case "osm": return (x.description||x.website)?0.25:0.05;
+    default: return 0.5;
+  }
+}
+function baseW(x,weighted){return (weighted?sourceW(x):1)*weatherW(x)}
+function pick(arr,weighted){if(!arr.length)return null;if(!weighted)return arr[Math.floor(Math.random()*arr.length)];let tot=0;const w=arr.map(x=>{const v=baseW(x,true);tot+=v;return v});let r=Math.random()*tot;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i]}return arr[arr.length-1]}
 /* Route-aware pick: keeps the weighted-random variety of pick() but biases
    toward stops that make a short, forward leg from the previous stop, so the
    day flows in one direction instead of doubling back. `prev` is the last
@@ -363,7 +380,7 @@ function pickRouted(arr,prev,prevPt,pools,weighted){
   let hx=prev.lng-ref.lng,hy=prev.lat-ref.lat;const hm=Math.hypot(hx,hy);
   const haveHead=hm>1e-9;if(haveHead){hx/=hm;hy/=hm}
   let tot=0;const ws=arr.map(c=>{
-    let w=(weighted?(c.curated?(c.weight||3):1):1)*weatherW(c);
+    let w=baseW(c,weighted);
     if(c.lat){
       const d=hav(prev.lat,prev.lng,c.lat,c.lng);
       w*=1/Math.pow(1+d/8,1.4);            /* favor short hops (~8mi scale) */
