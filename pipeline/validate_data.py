@@ -90,11 +90,16 @@ def main():
         notes.append(f"events: {len(items)}")
         if len(items) < MIN_EVENTS:
             fail(f"only {len(items)} upcoming events (floor {MIN_EVENTS})")
-        expired = [e for e in items
-                   if (e.get("dates", {}).get("end") or e.get("dates", {}).get("start") or "9999") < today]
-        if expired:
-            fail(f"{len(expired)} events already ended — the expiry filter did not run")
         gen = events.get("generated")
+        # Measure expiry against the build date, not right now. This check exists
+        # to prove the expiry filter ran; events that lapse naturally in the hours
+        # after a build are not a build failure. Staleness is the age check's job.
+        asof = (gen or "")[:10] or today
+        expired = [e for e in items
+                   if (e.get("dates", {}).get("end") or e.get("dates", {}).get("start") or "9999") < asof]
+        if expired:
+            fail(f"{len(expired)} events had already ended when the data was built "
+                 "— the expiry filter did not run")
         if gen:
             age = (now - datetime.datetime.fromisoformat(gen)).total_seconds() / 3600
             notes.append(f"events generated {age:.1f}h ago")
